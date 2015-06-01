@@ -1,0 +1,38 @@
+  OpenSuSE Linux 11.2 EZ OS Template Release
+  Notes
+  Copyright (c) 2009 by Parallels
+
+
+  This document describes OpenSuSE Linux 11.2 EZ OS Template for @PRODUCT_NAME_LONG@.
+  ______________________________________________________________________
+
+  Table of Contents
+
+
+  1. Prerequisites
+
+  2. Copyright information
+
+
+
+  ______________________________________________________________________
+
+  1.  Prerequisites
+
+  This OS template requires Virtuozzo version 4.0.0 or later with a
+  vzpkgenv41 version 4.0.0-38 or later, kernel version 2.6.18-028stab059.3
+  or later and rpm2vzrpm version 4.2.1-4.2.42 or later.
+
+  Please note that this template has some requirements to Container resources
+  which are covered by sample Container config named 'vps.basic' or 'unlimited'.
+  In addition to that, the following limits should be raised:
+
+  privvmpages shall be set to 35,000 or more.
+
+
+  2.  Copyright information
+
+  @PRODUCT_NAME_LONG@ is the product of Parallels,
+  http://sp.parallels.com/
+
+  OpenSuSE Linux 11.2 is the product of Novell. Inc., http://www.novell.com/

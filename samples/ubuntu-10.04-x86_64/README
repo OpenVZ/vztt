@@ -1,0 +1,44 @@
+  Ubuntu GNU/Linux 10.04 (for AMD64/Intel EM64T) EZ OS Template Release
+  Copyright (C) 2010 by Parallels.
+
+
+  This document describes Ubuntu GNU/Linux 10.04 (for AMD64/Intel EM64T)
+  EZ OS template for @PRODUCT_NAME_LONG@ 
+  ______________________________________________________________________
+
+  Table of Contents
+
+
+  1. Prerequisites
+
+  2. Copyright information
+
+
+  ______________________________________________________________________
+
+  1.  Prerequisites
+
+  This OS template requires Virtuozzo version 4.0.0 or later
+  with deb2vzdeb version 4.0.0-4.swsoft or later, or
+  Virtuozzo version 3.0.0 with vztt-3.0.0-70 or later.
+
+  Please note that this templates have some requirements to Container
+  resources which are covered by sample Container config named 'basic'.
+  Additionally you should set lockedpages to 1024:1024.
+
+  Also, vzpkgenvdeb version 4.6.0-2 or later required.
+
+  2. Known issues
+
+  You need to reboot the Container after upgrade from Ubuntu 8.04 or 9.10
+  manually or use vztt 4.0.0-239 or later.
+
+  vzctl start CTID --wait work on vzctl 4.0.0-239 or later.
+
+  3.  Copyright Information
+
+  @PRODUCT_NAME_LONG@ is the product of Parallels,
+  http://sp.parallels.com/
+
+  Ubuntu and Canonical are registered trademarks of Canonical Ltd.
+  http://ubuntu.com , http://canonical.com

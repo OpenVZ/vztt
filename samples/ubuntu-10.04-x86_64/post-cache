@@ -1,0 +1,42 @@
+#!/bin/bash
+
+#sanify check
+
+if [ $# -lt 1 ] ; then
+	echo "usage $0 ROOTDIR"
+	exit 1
+fi
+
+rootdir=$1
+
+if [ -z "$rootdir" ]; then
+	echo "ROOTDIR is not set."
+	exit 1
+fi
+
+# Check root directory
+if [ ! -d $rootdir ]; then
+	echo "$rootdir: should be a directory."
+	exit 1
+fi
+
+pushd $rootdir > /dev/null
+
+[ -f /etc/localtime ] && cp -fp /etc/localtime etc/localtime
+
+ln -sf /usr/share/zoneinfo/UTC etc/localtime
+
+# import localtime from HW
+tzdir="/usr/share/zoneinfo"
+if [ -d "$tzdir" ]; then
+	list=`find $tzdir/{Africa,America,Antarctica,Arctic,Asia,Atlantic,Australia,Brazil,Canada,Chile,Europe,Indian,Mexico,Mideast,Pacific,US} -type f -maxdepth 1 2> /dev/null`
+	for i in $list; do
+		if diff /etc/localtime $i > /dev/null 2>&1; then
+			echo ${i#$tzdir/} >> etc/timezone
+			ln -sf $i etc/localtime
+			break
+		fi
+	done
+fi
+
+popd > /dev/null

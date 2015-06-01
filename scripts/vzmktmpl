@@ -1,0 +1,768 @@
+#!/bin/bash
+#
+# $Id$
+#
+# Copyright (c) 2005-2010 by Parallels
+# All rights reserved.
+#
+# Templates creation utility.
+
+#. /usr/share/vztt/functions
+
+test -z "$PROGNAME"     && PROGNAME=`basename $0`
+
+VZCFG=/etc/sysconfig/vz
+
+DOCS=""
+FILES=""
+SCRIPTS=""
+TEMPDIR="${TMP:-/vz/tmp}"
+
+ARCH_LIST=" x86_64 ia64 x86 "
+GENXML=""
+
+function usage()
+{
+	cat 1>&2 << EOF
+Usage:
+	$PROGNAME [OPTION]... CONFFILE
+Create a @PRODUCT_NAME_LONG@ template using information from CONFFILE
+
+Options are:
+  --ct2vm name          add ct2vm script
+  --pre-cache name      add pre-cache script
+  --post-cache name     add post-cache script
+  --pre-install name    add pre-install script
+  --post-install name   add post-install script
+  --mid-pre-install name    add mid-pre-install script
+  --mid-post-install name   add mid-post-install script
+  --pre-install-hn name    add pre-install-hn script
+  --post-install-hn name   add post-install-hn script
+  --pre-update name     add pre-update script
+  --post-update name    add post-update script
+  --pre-upgrade name    add pre-upgrade script
+  --post-upgrade name   add post-upgrade script
+  --pre-remove name     add pre-remove script
+  --post-remove name    add post-remove script
+  --post-install-rpm    add post install rpm script
+  --environment         add environment variable list
+  -d, --doc name        add doc file
+  -f, --file name       add additional file
+  -s, --spec-only       create spec only
+  -r, --srpm            build source rpm
+  -h, --help            print this help message
+EOF
+	exit ${1:-0}
+}
+
+# Report error and exit
+function abort()
+{
+	local msg="ERROR: $*"
+	# Warnings and errors goes to stderr
+	echo -e $msg 1>&2
+	exit 1
+}
+
+# Returns requested variable from global VZ config file 
+function get_vztemplate()
+{
+	if [ -f $VZCFG ] ; then
+		source $VZCFG
+		[ $? -eq 0 ] || abort "Can not include $VZCFG"
+		value=$TEMPLATE
+	fi
+	if test -z "$value"; then
+		value="/vz/template"
+	fi
+	echo $value
+}
+
+function check_arch()
+{
+	[ $# -eq 1 ] || abort "$FUNCNAME: usage $FUNCNAME ARCH"
+	local arch=$1
+
+	test "${ARCH_LIST/ $arch /}" != "${ARCH_LIST}"
+}
+
+function metaconf_section() {
+  [ $# -eq 2 ] || abort "$FUNCNAME: usage $FUNCNAME SECTNAME CONFFILE"
+  [ -r $2 ] || abort "Cannot read file \"$2\""
+
+  awk -f - << 'EOF' FS=\\ "section=$1" "$2"
+(/^[ \t]*#/ || /^[ \t]*$/){
+    next;
+}
+
+($0 ~ "^%" section " .*$" || $0 ~ "^%" section "$" ){
+    prnt=1;
+    next;
+}
+
+($1 ~ "^%"){
+    prnt=0;
+}
+
+(prnt){
+    if ($2 ~ "#.*") {
+	print $2
+    } else {
+	print $0
+    }
+}
+EOF
+}
+
+function create_tarball {
+	[ $# -lt 2 ] && abort "$FUNCNAME: Usage $FUNCNAME DIR BASENAME FILE..."
+	local basename=$2 tdir=$1 i
+	shift 2
+	mkdir ${tdir}/${basename}-ez
+	[ $? -eq 0 ] || abort "Can not create temporary directory"
+	for i ; do
+		cp -af $i ${tdir}/${basename}-ez
+		[ $? -eq 0 ] || \
+			abort "Can not copy source file $i to ${tdir}/$basename"
+	done
+	tar -jcf ${basename}.tar.bz2 ${basename}-ez
+	[ $? -eq 0 ] || \
+		abort "Can not create source tarball"
+	popd >/dev/null
+	echo ${tdir}/${basename}.tar.bz2
+	return 0
+}
+
+pwd=$PWD
+
+# Note that we use `"$@"' to let each command-line parameter expand to a
+# separate word. The quotes around `$@' are essential!
+# We need OPTS var as the `eval set --' would nuke the return value of getopt.
+OPTS=`getopt -o hd:f:srx --long \
+help,ct2vm:,pre-cache:,post-cache:,mid-pre-install:,mid-post-install:,pre-install:,post-install:,pre-install-hn:,post-install-hn:,pre-upgrade:,post-upgrade:,pre-update:,post-update:,pre-remove:,post-remove:,environment:,post-install-rpm:,doc:,file:,spec-only,srpm,xml \
+-n $PROGNAME -- "$@"`
+[ $? -ne 0 ] && usage 1
+
+# Note the quotes around `$OPTS': they are essential!
+eval set -- "$OPTS"
+
+while true ; do
+	case "$1" in
+		-h|--help)      usage 0 ;;
+		-r|--srpm)      SRPM="yes"; shift ;;
+		-x|--xml)	GENXML="yes"; shift ;;
+		-d|--doc)
+			file=$2
+			[ ${file#/} = ${file} ] && file=${pwd}/${file}
+			DOCS="$DOCS $file"
+			shift 2
+			;;
+		-f|--file)
+			file=$2
+			[ ${file#/} = ${file} ] && file=${pwd}/${file}
+			FILES="$FILES $file"
+			shift 2
+			;;
+		--ct2vm)  
+			CT2VM=$2
+			[ ${CT2VM#/} = ${CT2VM} ] && \
+				CT2VM=${pwd}/${CT2VM}
+			SCRIPTS="$SCRIPTS $CT2VM"
+			shift 2
+			;;
+		--pre-cache)  
+			PRE_CACHE=$2
+			[ ${PRE_CACHE#/} = ${PRE_CACHE} ] && \
+				PRE_CACHE=${pwd}/${PRE_CACHE}
+			SCRIPTS="$SCRIPTS $PRE_CACHE"
+			shift 2
+			;;
+		--post-cache)
+			POST_CACHE=$2
+			[ ${POST_CACHE#/} = ${POST_CACHE} ] && \
+				POST_CACHE=${pwd}/${POST_CACHE}
+			SCRIPTS="$SCRIPTS $POST_CACHE"
+			shift 2
+			;;
+		--mid-pre-install)
+			MID_PRE_INSTALL=$2
+			[ ${MID_PRE_INSTALL#/} = ${MID_PRE_INSTALL} ] && \
+				MID_PRE_INSTALL=${pwd}/${MID_PRE_INSTALL}
+			SCRIPTS="$SCRIPTS $MID_PRE_INSTALL"
+			shift 2
+			;;
+		--mid-post-install)
+			MID_POST_INSTALL=$2
+			[ ${MID_POST_INSTALL#/} = ${MID_POST_INSTALL} ] && \
+				MID_POST_INSTALL=${pwd}/${MID_POST_INSTALL}
+			SCRIPTS="$SCRIPTS $MID_POST_INSTALL"
+			shift 2
+			;;
+		--pre-install)
+			PRE_INSTALL=$2
+			[ ${PRE_INSTALL#/} = ${PRE_INSTALL} ] && \
+				PRE_INSTALL=${pwd}/${PRE_INSTALL}
+			SCRIPTS="$SCRIPTS $PRE_INSTALL"
+			shift 2
+			;;
+		--post-install)
+			POST_INSTALL=$2
+			[ ${POST_INSTALL#/} = ${POST_INSTALL} ] && \
+				POST_INSTALL=${pwd}/${POST_INSTALL}
+			SCRIPTS="$SCRIPTS $POST_INSTALL"
+			shift 2
+			;;
+		--pre-install-hn)
+			PRE_INSTALL_HN=$2
+			[ ${PRE_INSTALL_HN#/} = ${PRE_INSTALL_HN} ] && \
+				PRE_INSTALL_HN=${pwd}/${PRE_INSTALL_HN}
+			SCRIPTS="$SCRIPTS $PRE_INSTALL_HN"
+			shift 2
+			;;
+		--post-install-hn)
+			POST_INSTALL_HN=$2
+			[ ${POST_INSTALL_HN#/} = ${POST_INSTALL_HN} ] && \
+				POST_INSTALL_HN=${pwd}/${POST_INSTALL_HN}
+			SCRIPTS="$SCRIPTS $POST_INSTALL_HN"
+			shift 2
+			;;
+		--pre-upgrade) 
+			PRE_UPGRADE=$2
+			[ ${PRE_UPGRADE#/} = ${PRE_UPGRADE} ] && \
+				PRE_UPGRADE=${pwd}/${PRE_UPGRADE}
+			SCRIPTS="$SCRIPTS $PRE_UPGRADE"
+			shift 2
+			;;
+		--post-upgrade)
+			POST_UPGRADE=$2
+			[ ${POST_UPGRADE#/} = ${POST_UPGRADE} ] && \
+				POST_UPGRADE=${pwd}/${POST_UPGRADE}
+			SCRIPTS="$SCRIPTS $POST_UPGRADE"
+			shift 2
+			;;
+		--pre-update) 
+			PRE_UPDATE=$2
+			[ ${PRE_UPDATE#/} = ${PRE_UPDATE} ] && \
+				PRE_UPDATE=${pwd}/${PRE_UPDATE}
+			SCRIPTS="$SCRIPTS $PRE_UPDATE"
+			shift 2
+			;;
+		--post-update)
+			POST_UPDATE=$2
+			[ ${POST_UPDATE#/} = ${POST_UPDATE} ] && \
+				POST_UPDATE=${pwd}/${POST_UPDATE}
+			SCRIPTS="$SCRIPTS $POST_UPDATE"
+			shift 2
+			;;
+		--pre-remove)  
+			PRE_REMOVE=$2
+			[ ${PRE_REMOVE#/} = ${PRE_REMOVE} ] && \
+				PRE_REMOVE=${pwd}/${PRE_REMOVE}
+			SCRIPTS="$SCRIPTS $PRE_REMOVE"
+			shift 2
+			;;
+		--post-remove)
+			POST_REMOVE=$2
+			[ ${POST_REMOVE#/} = ${POST_REMOVE} ] && \
+				POST_REMOVE=${pwd}/${POST_REMOVE}
+			SCRIPTS="$SCRIPTS $POST_REMOVE"
+			shift 2
+			;;
+		--environment)
+			ENVIRONMENT=$2
+			[ ${ENVIRONMENT#/} = ${ENVIRONMENT} ] && \
+				ENVIRONMENT=${pwd}/${ENVIRONMENT}
+			SCRIPTS="$SCRIPTS $ENVIRONMENT"
+			shift 2
+			;;
+		--post-install-rpm)
+			POST_INSTALL_RPM=$2
+			POST_INSTALL_RPM=${pwd}/${POST_INSTALL_RPM}
+			shift 2
+			;;
+ 		-s|--spec-only) SPECONLY="yes"; shift ;;
+		--) shift ; break ;;
+		*) usage 1 ;; 
+	esac
+done
+
+[ $# -eq 1 ] || usage 1
+
+# check
+config=$1
+[ ${config#/} = ${config} ] && config=${pwd}/${config}
+[ -e $config ] || abort "File $config not found or is unreadable"
+
+for i in $SCRIPTS $DOCS $FILES; do
+	[ -e $i ] || abort "File $i not found or is unreadable"
+done
+
+TEMPLATE=`get_vztemplate`
+[ $? -eq 0 ] || abort "Can not get TEMPLATE variable"
+
+# read sections from template meta congfig
+OSNAME=`metaconf_section osname $config`
+[ "$OSNAME" ] || \
+	abort "Can not find osname in $config file"
+OSVER=`metaconf_section osver $config`
+[ "$OSVER" ] || \
+	abort "Can not find osver in $config file"
+OSARCH=`metaconf_section osarch $config`
+[ "$OSARCH" ] || \
+	abort "Can not find osarch in $config file"
+check_arch $OSARCH || \
+	abort "Bad osarch. Should be: $ARCH_LIST"
+SETNAME=`metaconf_section setname $config`
+APPNAME=`metaconf_section appname $config`
+if [ "$POST_INSTALL_RPM" ] ; then
+	[ -f "$POST_INSTALL_RPM" ] || \
+		abort "Can not find $POST_INSTALL_RPM file" 
+fi
+
+
+basename=$OSNAME-$OSVER-$OSARCH
+[ "$APPNAME" ] && basename="$APPNAME-$basename"
+[ "$SETNAME" ] && basename="$basename-$SETNAME"
+
+# read requires
+REQUIRES=`metaconf_section requires $config`
+
+PACKAGES=`metaconf_section packages $config`
+
+# read packages_# sections (debian)
+for ((i=0; i<1000; i++)); do
+	TBUF=`metaconf_section packages_$i $config`
+	[ -z "$TBUF" ] && break
+	eval "PACKAGES_$i=\$TBUF"
+done
+
+PACKAGE_MANAGER=`metaconf_section package_manager $config`
+if [ "$PACKAGE_MANAGER" ] ; then
+	if [ "$SETNAME" -o "$APPNAME" ] ; then
+		echo "package_manager secton is not valid for os template set " \
+			"or app template" >&2
+		echo "Ignored" >&2
+		PACKAGE_MANAGER=""
+	fi
+else
+	[ -z "$SETNAME" -a -z "$APPNAME" ] && \
+		abort "package_manager is mandatory for os template without setname"
+fi
+TECHNOLOGIES=`metaconf_section technologies $config`
+if [ "$TECHNOLOGIES" ] ; then
+	if [ "$SETNAME" -o "$APPNAME" ] ; then
+		echo "technologies secton is not valid for os template set " \
+			"or app template" >&2
+		echo "Ignored" >&2
+		TECHNOLOGIES=""
+	fi
+fi
+
+OSRELEASE=`metaconf_section osrelease $config`
+if [ "$OSRELEASE" ] ; then
+	if [ "$SETNAME" -o "$APPNAME" ] ; then
+		echo "osrelease secton is not valid for os template set " \
+			"or app template" >&2
+		echo "Ignored" >&2
+		OSRELEASE=""
+	fi
+fi
+
+CACHE_TYPE=`metaconf_section cache_type $config`
+if [ "$CACHE_TYPE" ] ; then
+	if [ "$SETNAME" -o "$APPNAME" ] ; then
+		echo "cache_type secton is not valid for os template set " \
+			"or app template" >&2
+		echo "Ignored" >&2
+		CACHE_TYPE=""
+	fi
+fi
+
+
+UPGRADABLE_VERSIONS=`metaconf_section upgradable_versions $config`
+if [ "$UPGRADABLE_VERSIONS" ] ; then
+	if [ "$SETNAME" -o "$APPNAME" ] ; then
+		echo "upgradable_versions secton is not valid for os template set " \
+			"or app template" >&2
+		echo "Ignored" >&2
+		UPGRADABLE_VERSIONS=""
+	fi
+fi
+
+
+TMPL_TYPE=`metaconf_section distribution $config`
+if [ "$TMPL_TYPE" ] ; then
+	if [ "$SETNAME" -o "$APPNAME" ] ; then
+		echo "distribution secton is not valid for os template set or app template" >&2
+		echo "Ignored" >&2
+		TMPL_TYPE=""
+	fi
+fi
+REPOSITORIES=`metaconf_section repositories $config`
+ZYPP_REPOSITORIES=`metaconf_section zypp_repositories $config`
+MIRRORLIST=`metaconf_section mirrorlist $config`
+[ -z "$REPOSITORIES" -a  -z "$ZYPP_REPOSITORIES" -a -z "$MIRRORLIST" -a -z "$SETNAME" -a -z "$APPNAME" ] &&\
+	abort "repositories, zypp_repositories or mirrorlist are mandatary for os template"
+DESCRIPTION=`metaconf_section description $config`
+if [ -z "$DESCRIPTION" ] ; then
+	[ "$SETNAME" ] && addname="-$SETNAME"
+	if [ -z "$APPNAME" ] ; then
+		DESCRIPTION="$OSNAME-$OSVER-${OSARCH}${addname} @PRODUCT_NAME_LONG@ ostemplate"
+	else
+		DESCRIPTION="${APPNAME}${addname} for $OSNAME-$OSVER-$OSARCH @PRODUCT_NAME_LONG@ template"
+	fi
+fi
+NAME=`metaconf_section summary $config`
+if [ -z "$NAME" ] ; then
+	[ "$SETNAME" ] && addname="-$SETNAME"
+	if [ -z "$APPNAME" ] ; then
+		NAME="$OSNAME-$OSVER-${OSARCH}${addname} @PRODUCT_NAME_LONG@ ostemplate"
+	else
+		NAME="${APPNAME}${addname} for $OSNAME-$OSVER-$OSARCH @PRODUCT_NAME_LONG@ template"
+	fi
+fi
+CHANGELOG=`metaconf_section changelog $config`
+[ "$CHANGELOG" ] || \
+	CHANGELOG="* $(LANG=C date "+%a %b %d %Y") <$(whoami)@$(hostname -f 2>/dev/null || hostname)>\n- built"
+VERSION=`metaconf_section version $config`
+[ "$VERSION" ] || VERSION="1.0"
+RELEASE=`metaconf_section release $config`
+[ "$RELEASE" ] || RELEASE="1"
+LICENSE=`metaconf_section license $config`
+[ "$LICENSE" ] || LICENSE="Commertial"
+GOLDEN_IMAGE=`metaconf_section golden_image $config`
+
+[ -d "$TEMPDIR" ] || mkdir -p "$TEMPDIR"
+
+tmpdir=`mktemp -d $TEMPDIR/builddir.XXXXXX`
+[ $? -eq 0 ] || abort "Can not create temporary directory"
+pushd ${tmpdir} >/dev/null
+cleanup="popd; rm -rf $tmpdir"
+trap 'eval $cleanup; cleanup=""' 0 1 2 3 15
+
+# create sources in tmpdir
+old_ifs=$IFS
+IFS="
+"
+touch $tmpdir/packages
+for i in $PACKAGES ; do
+	echo $i >> $tmpdir/packages
+done
+[ $? -eq 0 ] || abort "File $tmpdir/packages creation error"
+SOURCES="$SOURCES $tmpdir/packages"
+
+for ((i=0; i<1000; i++)); do
+	eval "TBUF=\$PACKAGES_$i"
+	[ -z "$TBUF" ] && break;
+	for j in $TBUF ; do
+		echo $j >> $tmpdir/packages_$i
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/packages_$i creation error"
+	SOURCES="$SOURCES $tmpdir/packages_$i"
+done
+
+echo $DESCRIPTION > $tmpdir/description
+[ $? -eq 0 ] || abort "File $tmpdir/description creation error"
+SOURCES="$SOURCES $tmpdir/description"
+echo $NAME > $tmpdir/summary
+[ $? -eq 0 ] || abort "File $tmpdir/summary creation error"
+SOURCES="$SOURCES $tmpdir/summary"
+if [ "$PACKAGE_MANAGER" ] ; then
+	echo $PACKAGE_MANAGER > $tmpdir/package_manager
+	[ $? -eq 0 ] || abort "File $tmpdir/package_manager creation error"
+	SOURCES="$SOURCES $tmpdir/package_manager"
+fi
+if [ "$TMPL_TYPE" ] ; then
+	echo $TMPL_TYPE > $tmpdir/distribution
+	[ $? -eq 0 ] || abort "File $tmpdir/distribution creation error"
+	SOURCES="$SOURCES $tmpdir/distribution"
+fi
+if [ "$REPOSITORIES" ] ; then
+	for i in $REPOSITORIES ; do
+		echo $i >> $tmpdir/repositories
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/repositories creation error"
+	SOURCES="$SOURCES $tmpdir/repositories"
+fi
+if [ "$ZYPP_REPOSITORIES" ] ; then
+	for i in $ZYPP_REPOSITORIES ; do
+		echo $i >> $tmpdir/zypp_repositories
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/zypp_repositories creation error"
+	SOURCES="$SOURCES $tmpdir/zypp_repositories"
+fi
+if [ "$MIRRORLIST" ] ; then
+	for i in $MIRRORLIST ; do
+		echo $i >> $tmpdir/mirrorlist
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/mirrorlist creation error"
+	SOURCES="$SOURCES $tmpdir/mirrorlist"
+fi
+if [ "$TECHNOLOGIES" ] ; then
+	for i in $TECHNOLOGIES ; do
+		echo $i >> $tmpdir/technologies 
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/technologies creation error"
+	SOURCES="$SOURCES $tmpdir/technologies"
+fi
+if [ "$OSRELEASE" ] ; then
+	for i in $OSRELEASE ; do
+		echo $i >> $tmpdir/osrelease
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/osrelease creation error"
+	SOURCES="$SOURCES $tmpdir/osrelease"
+fi
+if [ "$CACHE_TYPE" ] ; then
+	for i in $CACHE_TYPE ; do
+		echo $i >> $tmpdir/cache_type
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/cache_type creation error"
+	SOURCES="$SOURCES $tmpdir/cache_type"
+fi
+if [ "$UPGRADABLE_VERSIONS" ] ; then
+	if [ "x$UPGRADABLE_VERSIONS" = "xnone" ]; then
+		touch $tmpdir/upgradable_versions
+		[ $? -eq 0 ] || abort "File $tmpdir/upgradable_versions creation error"
+	else
+		for i in $UPGRADABLE_VERSIONS ; do
+			echo $i >> $tmpdir/upgradable_versions
+		done
+		[ $? -eq 0 ] || abort "File $tmpdir/upgradable_versions creation error"
+	fi
+	SOURCES="$SOURCES $tmpdir/upgradable_versions"
+fi
+if [ "$GOLDEN_IMAGE" ] ; then
+	for i in $GOLDEN_IMAGE ; do
+		echo $i >> $tmpdir/golden_image
+	done
+	[ $? -eq 0 ] || abort "File $tmpdir/golden_image creation error"
+	SOURCES="$SOURCES $tmpdir/golden_image"
+fi
+echo $VERSION > $tmpdir/version
+[ $? -eq 0 ] || abort "File $tmpdir/version creation error"
+echo $RELEASE > $tmpdir/release
+[ $? -eq 0 ] || abort "File $tmpdir/release creation error"
+SOURCES="$SOURCES $tmpdir/version $tmpdir/release"
+
+
+IFS=$old_ifs
+
+tarball=`create_tarball $tmpdir $basename $SOURCES $SCRIPTS $DOCS $FILES`
+rc=$?
+[ $rc -eq 0 ] || exit $rc
+
+specfile=${tmpdir}/${basename}.spec
+
+specfile=${tmpdir}/${basename}.spec
+echo "
+%{!?url:%define url http://sp.parallels.com/}
+%{!?vendor:%define vendor Parallels}
+
+Prefix:     $TEMPLATE
+Name:       ${basename}-ez
+Version:    $VERSION
+Release:    $RELEASE
+Summary:    $NAME
+License:    $LICENSE
+Vendor:     %{vendor}
+Group:      @PRODUCT_NAME_LONG@/Templates
+URL:        %{url}
+Source:		${basename}.tar.bz2
+BuildRoot:	%{_tmppath}/%{name}
+BuildArch:	noarch
+AutoReq: 	0
+AutoProv: 	0
+" >> $specfile
+
+if [ "$APPNAME" ] ; then
+	echo "# Compatible OS" >> $specfile
+	echo "Requires:		$OSNAME-$OSVER-$OSARCH-ez" >> $specfile
+else
+	echo "Provides:		$OSNAME-$OSVER-$OSARCH-ez" >> $specfile
+fi
+
+if [ "$REQUIRES" ]; then
+	REQ_PARSED=`echo $REQUIRES | sed "s,^,Requires: ,g"`
+	echo "$REQ_PARSED" >> $specfile
+fi
+
+if [ "$POST_INSTALL_RPM" ] ; then
+	echo " " >> $specfile
+	echo "%post" >> $specfile
+	cat $POST_INSTALL_RPM >> $specfile
+fi
+
+echo "
+%description
+${DESCRIPTION}
+
+%prep
+%setup -q -n %{name}
+
+%install
+%{__rm} -rf %{buildroot}
+" >> $specfile
+
+filelist="${tmpdir}/files.lst"
+
+tdir="$TEMPLATE/$OSNAME/$OSVER/$OSARCH/config/"
+if [ "$APPNAME" ] ; then
+	tdir="${tdir}/app/$APPNAME"
+else
+	tdir="${tdir}/os/"
+fi
+if [ "$SETNAME" ] ; then
+	tdir="${tdir}/$SETNAME"
+else
+	tdir="${tdir}/default"
+fi
+echo "$TEMPLATE/$OSNAME" > $filelist
+echo "%{__install} -d -m0755 %{buildroot}${tdir}" >> $specfile
+for file in $SOURCES ; do
+ 	echo "%{__install} -m0644 `basename $file` %{buildroot}${tdir}/" >> $specfile
+	echo "%config ${tdir}/`basename $file`" >> $filelist
+done
+if [ "$CT2VM" ]; then
+ 	echo "%{__install} -m0755 `basename $CT2VM` %{buildroot}${tdir}/ct2vm" >> $specfile
+	echo "%config ${tdir}/ct2vm" >> $filelist
+fi
+if [ "$PRE_CACHE" ]; then
+ 	echo "%{__install} -m0755 `basename $PRE_CACHE` %{buildroot}${tdir}/pre-cache" >> $specfile
+	echo "%config ${tdir}/pre-cache" >> $filelist
+fi
+if [ "$POST_CACHE" ]; then
+ 	echo "%{__install} -m0755 `basename $POST_CACHE` %{buildroot}${tdir}/post-cache" >> $specfile
+	echo "%config ${tdir}/post-cache" >> $filelist
+fi
+if [ "$MID_PRE_INSTALL" ]; then
+ 	echo "%{__install} -m0755 `basename $MID_PRE_INSTALL` %{buildroot}${tdir}/mid-pre-install" >> $specfile
+	echo "%config ${tdir}/mid-pre-install" >> $filelist
+fi
+if [ "$MID_POST_INSTALL" ]; then
+ 	echo "%{__install} -m0755 `basename $MID_POST_INSTALL` %{buildroot}${tdir}/mid-post-install" >> $specfile
+	echo "%config ${tdir}/mid-post-install" >> $filelist
+fi
+if [ "$PRE_INSTALL" ]; then
+ 	echo "%{__install} -m0755 `basename $PRE_INSTALL` %{buildroot}${tdir}/pre-install" >> $specfile
+	echo "%config ${tdir}/pre-install" >> $filelist
+fi
+if [ "$POST_INSTALL" ]; then
+ 	echo "%{__install} -m0755 `basename $POST_INSTALL` %{buildroot}${tdir}/post-install" >> $specfile
+	echo "%config ${tdir}/post-install" >> $filelist
+fi
+if [ "$PRE_INSTALL_HN" ]; then
+ 	echo "%{__install} -m0755 `basename $PRE_INSTALL_HN` %{buildroot}${tdir}/pre-install-hn" >> $specfile
+	echo "%config ${tdir}/pre-install-hn" >> $filelist
+fi
+if [ "$POST_INSTALL_HN" ]; then
+ 	echo "%{__install} -m0755 `basename $POST_INSTALL_HN` %{buildroot}${tdir}/post-install-hn" >> $specfile
+	echo "%config ${tdir}/post-install-hn" >> $filelist
+fi
+if [ "$PRE_UPGRADE" ]; then
+ 	echo "%{__install} -m0755 `basename $PRE_UPGRADE` %{buildroot}${tdir}/pre-upgrade" >> $specfile
+	echo "%config ${tdir}/pre-upgrade" >> $filelist
+fi
+if [ "$POST_UPGRADE" ]; then
+ 	echo "%{__install} -m0755 `basename $POST_UPGRADE` %{buildroot}${tdir}/post-upgrade" >> $specfile
+	echo "%config ${tdir}/post-upgrade" >> $filelist
+fi
+if [ "$PRE_UPDATE" ]; then
+ 	echo "%{__install} -m0755 `basename $PRE_UPDATE` %{buildroot}${tdir}/pre-update" >> $specfile
+	echo "%config ${tdir}/pre-update" >> $filelist
+fi
+if [ "$POST_UPDATE" ]; then
+ 	echo "%{__install} -m0755 `basename $POST_UPDATE` %{buildroot}${tdir}/post-update" >> $specfile
+	echo "%config ${tdir}/post-update" >> $filelist
+fi
+if [ "$PRE_REMOVE" ]; then
+ 	echo "%{__install} -m0755 `basename $PRE_REMOVE` %{buildroot}${tdir}/pre-remove" >> $specfile
+	echo "%config ${tdir}/pre-remove" >> $filelist
+fi
+if [ "$POST_REMOVE" ]; then
+ 	echo "%{__install} -m0755 `basename $POST_REMOVE` %{buildroot}${tdir}/post-remove" >> $specfile
+	echo "%config ${tdir}/post-remove" >> $filelist
+fi
+if [ "$ENVIRONMENT" ]; then
+ 	echo "%{__install} -m0644 `basename $ENVIRONMENT` %{buildroot}${tdir}/environment" >> $specfile
+	echo "%config ${tdir}/environment" >> $filelist
+fi
+
+if [ "$DOCS" ] ; then
+	echo "%{__install} -d %{buildroot}${tdir}/doc/" >> $specfile
+	for i in $DOCS ; do
+		echo "%{__install} -m0644 `basename $i` %{buildroot}${tdir}/doc/" >> $specfile
+	done
+fi
+
+if [ "$FILES" ] ; then
+	echo "%{__install} -d %{buildroot}${tdir}/files/" >> $specfile
+	for i in $FILES ; do
+		echo "%{__install} `basename $i` %{buildroot}${tdir}/files/" >> $specfile
+	done
+fi
+
+echo "
+%files -f $filelist
+%defattr(-,root,root)
+
+%clean
+
+%changelog
+$changelog" >> $specfile
+
+popd >/dev/null
+
+if [ "$SPECONLY" = "yes" ] ; then
+	mv $specfile .
+	[ $? -eq 0 ] || abort "Can not save spec file"
+	echo "Spec was saved as $PWD/"`basename $specfile`
+	trap '' 0 1 2 3 15
+	exit 0
+fi
+
+[ "$SRPM" = "yes" ] && build_opt="-bs" || build_opt="-bb"
+
+rpmbuild $build_opt --clean \
+    --define '_rpmfilename %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm' \
+    --define '_sourcedir '"${tmpdir}" \
+    --define '_rpmdir '"${pwd}" \
+    --define '_srcrpmdir '"${pwd}" \
+    ${specfile}
+
+if [ x$GENXML = xyes ]; then
+    # Create xml
+    XML=$basename-ez.xml
+    rm -f $XML
+    if [ "$APPNAME" ] ; then
+	echo '  <Component>' >> $XML
+	echo '          <Name>'$APPNAME'</Name>' >> $XML
+	echo '          <Type>Application</Type>' >> $XML
+    else
+        echo '  <Name>'$OSNAME-$OSVER-$OSARCH'</Name>' >> $XML
+        echo '  <Type>All</Type>' >> $XML
+	echo '  <Summary>'$NAME'</Summary>' >> $XML
+	echo '  <Description>'$DESCRIPTION'</Description>' >> $XML
+	echo '  <Category>Operating Systems</Category>' >> $XML
+	echo '  <Instructions>linux1</Instructions>' >> $XML 
+	echo '  <Publisher>SWsoft</Publisher>' >> $XML
+	echo '  <Platform>Linux</Platform>' >> $XML
+	echo '  <Architecture>'$OSARCH'</Architecture>' >> $XML
+	echo '  <OS>'$OSNAME'</OS>' >> $XML
+	echo '  <Version>'$OSVER'</Version>' >> $XML
+	echo '  <Component>' >> $XML
+	echo '          <Name>'$OSNAME-$OSVER-$OSARCH'</Name>' >> $XML
+	echo '          <Type>OS</Type>' >> $XML
+    fi
+    echo '          <Summary>'$NAME'</Summary>' >> $XML
+    echo '          <Description>'$DESCRIPTION'</Description>' >> $XML
+    echo '          <File>'$basename-ez-$VERSION-$RELEASE.noarch.rpm'</File>' >> $XML
+    echo '          <License>'$LICENSE'</License>' >> $XML
+    echo '          <Size>Auto</Size>' >> $XML
+    echo '  </Component>' >> $XML
+fi
+rm -rf $tmpdir
+trap '' 0 1 2 3 15
+
+exit 0
+
+

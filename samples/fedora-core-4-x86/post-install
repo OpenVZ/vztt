@@ -1,0 +1,128 @@
+#!/bin/bash
+
+function move_file() {
+	[ $# -eq 2 ] || exit 1
+	local src=$1 dst=$2
+
+	chown --reference=$dst $src || exit 1 
+	chmod --reference=$dst $src || exit 1 
+	mv -f $src $dst
+}
+
+pushd / >/dev/null
+
+[ ! -e etc/mtab ] && ln -s /proc/mounts etc/mtab > /dev/null 2>&1
+
+# Convert system to shadow password files
+/usr/sbin/pwconv > /dev/null 2>&1
+
+# Disable root login
+CFG_FILE=etc/shadow
+if [ -f $CFG_FILE ]; then
+	sed "s/^root::/root:!:/" $CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+
+# do not launch mingetty on tty devices - they are not accessible from VE
+CFG_FILE=etc/inittab
+if [ -f $CFG_FILE ]; then
+	sed '/^.*mingetty.*$/d' $CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+# replace locale-archive to symlink
+if [ -f /usr/lib/locale/locale-archive ] ; then
+        rm -f /usr/lib/locale/locale-archive
+        ln -s /dev/null /usr/lib/locale/locale-archive
+fi
+
+
+#disable interactive startup
+CFG_FILE=etc/sysconfig/init
+if [ -f $CFG_FILE ]; then
+	sed -e 's/^PROMPT=.*/PROMPT=no/g' \
+		$CFG_FILE > ${CFG_FILE}.$$ && \
+			 move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+# Disable klogd
+CFG_FILE=etc/init.d/syslog
+if [ -f $CFG_FILE ]; then
+    sed -e 's/daemon klogd/passed klogd skipped #&/' \
+        -e 's/killproc klogd/passed klogd skipped #&/' \
+        $CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+# Fix /etc/syslog.conf
+CFG_FILE=etc/sysctl.conf
+if [ -f $CFG_FILE ]; then
+    sed -e "s/\([[:space:]]\)\(\/var\/log\/\)/\1-\2/g" \
+		-e "s,^kernel\.,# kernel.,g" \
+	-e "s,^net.ipv4.conf\.,# net.ipv4.conf.,g" \
+        $CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+# disable all services
+if [ -f /sbin/chkconfig ] && [ -f /bin/grep ] && [ -f /bin/sed ] ; then 
+for i in `LANG=C /sbin/chkconfig --list | grep -v "xinetd based services:" | sed -e "s/\([^ ]*\)[ ]*0.*/\1/" -e "s/[\t]\(.*\):.*/\1/"`; do
+	[ -x etc/init.d/$i ] && /sbin/chkconfig --level 3 $i off > /dev/null 2>&1
+done
+fi
+
+# turn services on
+list="network httpd iptables sshd xinetd saslauthd sendmail syslog crond"
+for i in $list; do
+	/sbin/chkconfig --level 3 $i on > /dev/null 2>&1	
+done
+
+# disable all cron jobs
+for i in d hourly daily weekly monthly; do
+	chmod a-x /etc/cron.${i}/* > /dev/null 2>&1
+done
+# enable logrotate
+chmod a+x /etc/cron.daily/logrotate > /dev/null 2>&1
+
+# mount /dev/pts
+echo "none	/dev/pts	devpts	rw	0	0" >> etc/fstab
+mkdir -p dev/pts > /dev/null 2>&1
+
+# Rebuild rpm database
+rpm --rebuilddb > /dev/null 2>&1
+
+# Optional tuning
+
+# Fix sshd_config 
+CFG_FILE=etc/ssh/sshd_config
+if [ -f $CFG_FILE ]; then
+    sed -e "s/^X11Forwarding yes/X11Forwarding no/" \
+        $CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+# apache tuning
+CFG_FILE=etc/httpd/conf/httpd.conf
+if [ -f $CFG_FILE ]; then
+    sed -e "s/^StartServers[[:blank:]]*.*/StartServers       1/" \
+        -e "s/^MinSpareServers[[:blank:]]*.*/MinSpareServers    1/" \
+        -e "s/^MaxSpareServers[[:blank:]]*.*/MaxSpareServers    5/" \
+        -e "s/^ServerLimit[[:blank:]]*.*/ServerLimit       10/" \
+        -e "s/^MaxClients[[:blank:]]*.*/MaxClients        10/" \
+        -e "s/^MinSpareThreads[[:blank:]]*.*/MinSpareThreads    1/" \
+        -e "s/^MaxSpareThreads[[:blank:]]*.*/MaxSpareThreads    4/" \
+        $CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+# saslauthd tuning
+CFG_FILE=etc/sysconfig/saslauthd
+if [ -f $CFG_FILE ]; then
+    sed -e "s/^FLAGS=/FLAGS=\"-n 2\"/" \
+        $CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+popd > /dev/null
+

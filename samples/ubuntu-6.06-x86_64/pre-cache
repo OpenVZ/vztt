@@ -1,0 +1,42 @@
+#!/bin/bash
+
+#sanify check
+if [ $# -lt 1 ] ; then
+	echo "usage $0 ROOTDIR"
+	exit 1
+fi
+
+rootdir=$1
+    
+if [ -z "$rootdir" ]; then
+	echo "ROOTDIR is not set."
+	exit 1
+fi
+		
+# Check root directory
+if [ ! -d $rootdir ]; then
+	echo "$rootdir: should be a directory."
+	exit 1
+fi
+
+pushd $rootdir > /dev/null
+
+mkdir etc
+ln -sf /usr/share/zoneinfo/UTC etc/localtime
+
+# to create min sendmail.cf for newaliases, called from 
+# apache postinst script
+mkdir -p etc/mail
+echo "\
+V10/Berkeley
+O QueueDirectory=/
+Mlocal,         P=/usr/lib/sm.bin/sensible-mda, F=lsDFMAw5:/|@qSPhnu9, S=EnvFromL/HdrFromL, R=EnvToL/HdrToL,
+                T=DNS/RFC822/X-Unix,
+                A=sensible-mda $g $u $h ${client_addr}
+" > etc/mail/sendmail.cf
+
+echo "proc  /proc       proc    defaults    0    0" >> etc/fstab
+echo "none  /dev/pts    devpts  rw          0    0" >> etc/fstab
+
+popd > /dev/null
+

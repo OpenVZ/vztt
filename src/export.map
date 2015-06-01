@@ -1,0 +1,12 @@
+{
+	global:
+		vztt_*;
+		vztt2_*;
+		get_veid;
+		is_veid;
+		exec_cmd;
+		info_appcache;
+		list_avail_get_full_list;
+	local:
+		*;
+};

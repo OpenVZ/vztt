@@ -1,0 +1,29 @@
+%osname
+fedora-core
+
+%osver
+4
+
+%osarch
+x86
+
+%appname
+mysql
+
+%setname
+server
+
+%version
+2.7.0
+%release
+1.swsoft
+%summary
+MySQL Server for Fedora Core 4 template
+%license
+SWsoft
+
+%packages
+mysql-server
+
+%description
+MySQL Server for Fedora Core 4 packaged as a @PRODUCT_NAME_LONG@ template.

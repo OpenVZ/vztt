@@ -1,0 +1,37 @@
+#!/bin/bash
+
+mkdir -p etc/init
+
+echo "# upgrade - tell vzctl that start was successfull
+#
+# This task causes to tell vzctl that start was successfull
+
+description	\"tell vzctl that start was successfull\"
+
+start on startup
+
+task
+
+exec echo 2 > /.vzfifo
+" > etc/init/upgrade.conf
+
+echo "#!/bin/sh
+
+exit 0
+" > etc/init.d/klogd
+
+chmod 0755 etc/init.d/klogd
+
+if [ ! -f etc/init.d/wide-dhcpv6-client ]; then
+	echo "#!/bin/sh
+
+exit 0
+" > etc/init.d/wide-dhcpv6-client
+
+	chmod 0755 etc/init.d/wide-dhcpv6-client
+fi
+
+killall spamd >/dev/null 2>&1
+dpkg -r spamassassin >/dev/null 2>&1
+
+:

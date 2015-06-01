@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#sanify check
+
+if [ $# -lt 1 ] ; then
+	echo "usage $0 ROOTDIR"
+	exit 1
+fi
+
+rootdir=$1
+
+if [ -z "$rootdir" ]; then
+	echo "ROOTDIR is not set."
+	exit 1
+fi
+
+# Check root directory
+if [ ! -d $rootdir ]; then
+	echo "$rootdir: should be a directory."
+	exit 1
+fi
+
+pushd $rootdir > /dev/null
+
+[ -f /etc/localtime ] && cp -fp /etc/localtime etc/localtime
+[ -f /etc/sysconfig/i18n ] && cp -fp /etc/sysconfig/i18n etc/sysconfig/i18n
+
+popd > /dev/null

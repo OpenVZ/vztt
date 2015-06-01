@@ -1,0 +1,144 @@
+#!/bin/bash
+
+# Remove pre-upgrade hook
+rm -f etc/init/upgrade.conf
+
+# do not launch getty on tty devices - they are not accessible from Container
+mkdir -p etc/init.removed
+mv -f etc/init/tty* etc/init.removed
+
+# do not launch init scripts
+mv -f etc/init/control-alt-delete.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/hwclock* etc/init.removed >/dev/null 2>&1
+mv -f etc/init/mountall* etc/init.removed >/dev/null 2>&1
+mv -f etc/init/rcS.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/portmap.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/anacron.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/network* etc/init.removed >/dev/null 2>&1
+mv -f etc/init/*udev* etc/init.removed >/dev/null 2>&1
+mv -f etc/init/rc-sysinit.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/rc.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/smbd.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/nmbd.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/plymouth*.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/mounted*.conf etc/init.removed >/dev/null 2>&1
+mv -f etc/init/ssh.conf etc/init.removed >/dev/null 2>&1
+
+# Fix networking.conf
+cat etc/init.removed/networking.conf | grep -v udevtrigger | \
+sed "s,(local-filesystems,local-filesystems,g" > etc/init/networking.conf
+
+# Fix rc-sysinit.conf
+cat etc/init.removed/rc-sysinit.conf | sed "s, and net-device-up IFACE=lo,,g" | \
+sed "s,^console output,#console output,g" | sed "s,^env INIT_VERBOSE,#env INIT_VERBOSE,g" \
+> etc/init/rc-sysinit.conf
+
+cat etc/init.removed/rc.conf | \
+sed "s,^console output,#console output,g" | sed "s,^env INIT_VERBOSE,#env INIT_VERBOSE,g" \
+> etc/init/rc.conf
+
+# Fix ssh.conf
+cat etc/init.removed/ssh.conf | \
+sed "s,^oom never,#oom never,g" > etc/init/ssh.conf
+
+# Create mountall upstart config
+echo "# mountall - Mount filesystems on boot
+#
+# This helper mounts filesystems in the correct order as the devices
+# and mountpoints become available.
+
+description	\"Mount filesystems on boot\"
+
+start on startup
+
+task
+
+emits virtual-filesystems
+emits local-filesystems
+emits remote-filesystems
+emits all-swaps
+emits all-filesystems
+emits filesystem
+
+pre-start script
+    find /var/run -mindepth 1 -maxdepth 1 | grep -v utmp | xargs rm -rf
+    mkdir -p /var/run/network
+    find /var/lock -mindepth 1 -maxdepth 1 | xargs rm -rf
+end script
+
+post-start script
+    initctl emit -n filesystem
+    initctl emit -n all-swaps
+    initctl emit -n all-filesystems
+    initctl emit -n virtual-filesystems
+    initctl emit -n remote-filesystems
+    initctl emit -n local-filesystems
+    mount -a
+end script
+" > etc/init/mountall.conf
+
+# turn off and stop some services
+for i in klogd bind9 quotarpc samba fetchmail ondemand; do
+	usr/sbin/update-rc.d -f $i remove > /dev/null 2>&1
+	etc/init.d/$i stop > /dev/null 2>&1
+done
+
+# Create utmp
+
+if [ ! -f var/run/utmp ]; then
+    cat /dev/null > var/run/utmp
+    chmod 0664 var/run/utmp
+    chown root.utmp var/run/utmp
+fi
+
+# Create devices
+
+for i in 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+    a=`awk -v num=$i 'BEGIN { printf("%x\n", num) }'`
+    if [ ! -c dev/ttyp$i ]; then
+	mknod dev/ttyp$a c 3 $i
+    fi
+    if [ ! -c dev/ptyp$i ]; then
+	mknod dev/ptyp$a c 2 $i
+    fi
+done
+
+# Remove upstart core files
+rm -f /core*
+
+# Create empty /etc/inittab file
+touch etc/inittab
+
+# Turn back wide-dhcpv6-client init script and clean default conf file
+# regenerate dhcp6cctlkey if exists
+mv -f etc/init.d/wide-dhcpv6-client.dpkg-dist etc/init.d/wide-dhcpv6-client >/dev/null 2>&1
+cat > etc/default/wide-dhcpv6-client <<'EOFINITCONFFILE'
+# Defaults for dhcpv6 client initscript
+# Used by /etc/init.d/wide-dhcpv6-client
+
+# Interfaces on which the client should send DHCPv6 requests and listen to
+# answers. If empty, the client is deactivated.
+INTERFACES=""
+EOFINITCONFFILE
+
+rm -f etc/wide-dhcpv6/dhcp6cctlkey
+
+echo "#!/bin/sh
+DHCP6CCTLKEY=/etc/wide-dhcpv6/dhcp6cctlkey
+
+# The key mustn\'t be world readable
+umask 066
+
+echo \"Generating \${DHCP6CCTLKEY}...\" >&2
+dd if=/dev/random bs=32 count=1 2>/dev/null | \
+	uuencode -m \${DHCP6CCTLKEY} | \
+	head -n 2 | tail -n 1 > \${DHCP6CCTLKEY}
+
+umask 022
+rm -f /etc/init.d/dhcpv6_hack.sh
+rm -f /etc/rc2.d/S11dhcpv6hack
+"> etc/init.d/dhcpv6_hack.sh
+chmod a+x etc/init.d/dhcpv6_hack.sh
+ln -s /etc/init.d/dhcpv6_hack.sh etc/rc2.d/S11dhcpv6hack
+
+:

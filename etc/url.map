@@ -1,0 +1,9 @@
+# moved from /etc/vztt/vztt.conf for compatibility
+$SW_SERVER	http://vzdownload.swsoft.com
+$CE_SERVER	http://mirror.centos.org
+$SUSE_SERVER/pub/opensuse	http://download.opensuse.org 
+$DEB_SERVER	ftp://ftp.de.debian.org
+#$RH_SERVER	http://
+#$SLES_SERVER	http://
+$SUSE2_SERVER	ftp://ftp.suse.com
+$UBU_SERVER	http://archive.ubuntu.com

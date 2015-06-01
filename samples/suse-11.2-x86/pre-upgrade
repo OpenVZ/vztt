@@ -1,0 +1,29 @@
+#!/bin/sh
+
+for CFG_FILE in /etc/init.d/boot.udev /etc/init.d/boot.device-mapper; do
+cat > $CFG_FILE << EOF
+#! /bin/sh
+# $CFG_FILE
+### BEGIN INIT INFO
+# Provides:          `basename $CFG_FILE`
+# Required-Start:
+# Should-Start:
+# Required-Stop:
+# Default-Start:     B
+# Default-Stop:
+# Description:       dummy script
+### END INIT INFO
+
+exit 0
+
+EOF
+
+chmod +x $CFG_FILE
+/sbin/insserv $CFG_FILE
+done
+
+rpm -e --nodeps --justdb php5-sysvmsg php5-xmlrpc php5-pcntl php5-pspell php5-posix php5-soap >/dev/null 2>&1
+rpm -e --nodeps --justdb gpg2-lang opensc >/dev/null 2>&1
+rpm -e --nodeps --justdb postgresql-devel >/dev/null 2>&1
+
+:

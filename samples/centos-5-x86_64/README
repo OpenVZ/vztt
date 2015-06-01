@@ -1,0 +1,44 @@
+  CentOS 5 (for AMD64/Intel EM64T) EZ OS Template Release
+  Notes
+  Copyright (c) 2007, 2008 by Parallels
+
+
+  This document describes CentOS 5 (for AMD64/Intel EM64T)
+  EZ OS Template for @PRODUCT_NAME_LONG@ and HSPcomplete.
+  ______________________________________________________________________
+
+  Table of Contents
+
+
+  1. Prerequisites
+
+  2. Copyright information
+
+
+
+  ______________________________________________________________________
+
+  1.  Prerequisites
+
+  This OS template requires Virtuozzo version 3.0.0 or later with a
+  2.6.9 or later kernel running. If you use 2.6.8 kernel you should run the
+  following script on your HN:
+
+  cat /proc/sys/kernel/virt_osrelease | sed "s,2.6.8,2.6.9,g" > /proc/sys/kernel/virt_osrelease
+
+
+  Please note that this templates have some requirements to Container resources
+  which are covered by sample Container config named 'basic' or 'unlimited'.
+  Please do not use this template with 'light' Container config.
+
+  In addition to that, the following limits should be raised:
+
+  kmemsize shall be set to 5452595:5812466 or more.
+
+
+  2.  Copyright information
+
+  @PRODUCT_NAME_LONG@ is the product of Parallels,
+  http://sp.parallels.com/
+
+  CentOS 5 (for AMD64/Intel EM64T) is a product of cAos Foundation, http://www.centos.org/

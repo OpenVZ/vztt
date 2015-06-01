@@ -1,0 +1,6 @@
+/myinit
+/*.diff
+/vztt-Makefile.mk
+/*.pyc
+/nbproject
+/.vztt.spec.swp

@@ -1,0 +1,324 @@
+#!/bin/bash
+
+SCRIPT_NAME=`basename $0`
+
+SCRIPTVERSION=2
+NEEDSPACE=105450
+
+DATADIR="/usr/share/libvznbdmig"
+
+. $DATADIR/ct2vmlib
+
+#getmigscript $SCRIPT_NAME >/dev/null 2>&1
+
+TMPLOSNAME=fedora-core
+TMPLVERSION=12
+TMPLARCH=x86
+
+if [ $TMPLARCH = x86 ]; then
+	TMPLENV="rpm44x86"
+else
+	TMPLENV="rpm44x64"
+fi
+
+SYSLOG_SCRIPT="syslog"
+CT2VM_PACKAGES_RM="vzdummy-jre-fc6 vzdummy-kernel-el5 vzdummy-apache vzdev
+vzdummy-glibc vzdummy-kernel-utils-el5"
+CT2VM_PACKAGES_ADD="kernel grub"
+INSTDEVICE="/dev/hda1"
+DEVMAJOR=3
+DEVMINOR=1
+INITRD_OPTS="--rootdev=$INSTDEVICE"
+USE_UPSTART=no
+
+case "$TMPLOSNAME" in
+	centos)
+		TMPLTITLE="CentOS Linux 5"
+		;;
+	redhat)
+		TMPLTITLE="RedHat Enterprise Linux 5"
+		;;
+	asianux)
+		TMPLTITLE="Asianux 3"
+		;;
+	oracle)
+		TMPLTITLE="Oracle Enterprise Linux 5"
+		;;
+	fedora-core)
+		SYSLOG_SCRIPT="rsyslog"
+		INSTDEVICE="/dev/sda1"
+		DEVMAJOR=8
+		TMPLTITLE="Fedora $TMPLVERSION"
+		case "$TMPLVERSION" in
+			9)
+				CT2VM_PACKAGES_RM="vzdummy-kernel-fc9 vzdev vzdummy-glibc vzdummy-jre-fc9"
+				INITRD_OPTS="--rootdev=$INSTDEVICE --with=sd_mod --with-avail=ata_piix"
+				;;
+			11|12)
+				USE_UPSTART=yes
+				CT2VM_PACKAGES_RM="vzdev vzdummy-jre-fc9"
+				CT2VM_PACKAGES_ADD="$CT2VM_PACKAGES_ADD mkinitrd"
+				INITRD_OPTS="--rootdev=$INSTDEVICE"
+				if [ $TMPLARCH = x86 ]; then
+					TMPLENV="rpm47x86"
+				else
+					TMPLENV="rpm47x64"
+				fi
+				;;
+		esac
+		;;
+	*)
+		TMPLTITLE="RedHat-based Enterprise Linux 5"
+		;;
+esac
+
+RUN_FROM_CHROOT="$DATADIR/run_from_chroot /vz/pkgenv/$TMPLENV"
+VEID=$1
+NBD_PATH=$2
+MSG_LEVEL=$3
+CHECK_PACKAGES=$4
+FSOPTIONS="defaults"
+
+. /etc/vz/conf/$VEID.conf
+. /etc/vz/vz.conf
+
+function usage() {
+	echo "Usage: $1 CTID NBD_PATH MSG_LEVEL [check_packages]"
+}
+
+function cleanup(){
+	return 0
+}
+
+function clean_environment() {
+	# Clean environment for fc11 and 12
+	if [ $USE_UPSTART = "yes" ]; then
+		rm -f $NBD_PATH/var/lib/rpm/__db* >/dev/null 2>&1
+	fi
+}
+
+function fixperms_fc11() {
+	for i in `$RUN_FROM_CHROOT /usr/lib/rpm/rpmq -qplv $1 2>/dev/null | \
+		awk '{ if ($1 !~ /l/)
+		if ($1 ~ /b/ || $1 ~ /c/) print $3"."$4"///"$10
+		else print $3"."$4"///"$9 }'`; do
+		cmd=`echo $i | sed "s,///, $NBD_PATH,g"`
+		if [ -a `echo $cmd | awk '{ print $2 }'` ]; then
+			chown $cmd >/dev/null 2>&1
+			[ $? -ne 0 ] && error_msg "chown $cmd failed" $ERR_TMPL
+		fi
+	done
+}
+
+if [ "x$VEID" = "x" ]; then
+	usage
+	error_msg "You should give CTID" $ERR_TMPL
+fi
+
+if [ "x$CHECK_PACKAGES" = "xcheck_packages" ]; then
+	$VZPKG install $VEID -q -n -p $CT2VM_PACKAGES_ADD >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		error_msg "Can't download packages $CT2VM_PACKAGES_ADD" $ERR_TMPL
+	else
+		exit 0
+	fi
+fi
+
+if [ ! -d $NBD_PATH ] || [ "x$NBD_PATH" = "x" ] || [ "x$NBD_PATH" = "/" ]; then
+	usage
+	error_msg "You should give right NBD_PATH ($NBD_PATH)" $ERR_TMPL
+fi
+
+if [ "x$INSTDEVICE" = "x" ]; then
+	usage
+	error_msg "You should give device" $ERR_TMPL
+fi
+
+clean_environment
+
+# Remove and install packages
+remove_packages
+
+# Create devices
+/bin/mknod $NBD_PATH/dev/null c 1 3 >/dev/null 2>&1
+/bin/chmod 666 $NBD_PATH/dev/null >/dev/null 2>&1
+
+clean_environment
+
+if [ $USE_UPSTART = "yes" ]; then
+	msg $MSG_INFO "Installing packages..."
+	# Get packages
+	PACKAGES=""
+	for i in `$VZPKG install $VEID -q -n -p $CT2VM_PACKAGES_ADD 2>/dev/null \
+		| sed -n '/^Installed:$/,//p' | \
+		awk '{ if ($1 !~ /Installed:/) print $1"-"$3"."$2 }'`; do
+		PACKAGES="$PACKAGES $i"
+	done
+
+	PACKAGESRPM=""
+	# Copy packages content and get vzrpm names
+	for i in $PACKAGES; do
+		a=`echo $i | sed "s,-.*:,-,g"`
+		PACKAGERPM=`find \
+                /vz/template/$TMPLOSNAME/$TMPLVERSION/$TMPLARCH/pm \
+                -name $a*.rpm -type f -print -quit`
+		for f in `rpm -qpl $PACKAGERPM`; do
+			if [ -e /vz/template/$TMPLOSNAME/$TMPLVERSION/$TMPLARCH/$i/$f ]; then
+				[ -d $(dirname $NBD_PATH/$f) ] || mkdir -p $(dirname $NBD_PATH/$f)
+				cp -a --preserve=all --sparse=always \
+					/vz/template/$TMPLOSNAME/$TMPLVERSION/$TMPLARCH/$i/$f $NBD_PATH/$f
+				[ $? -ne 0 ] && error_msg "Failed to copy content package $i" \
+				$ERR_TMPL
+			fi
+		done
+		PACKAGESRPM="$PACKAGESRPM $PACKAGERPM"
+	done
+
+	# Install packages into rpmdb
+	$RUN_FROM_CHROOT /usr/lib/rpm/rpmi -U --nodeps --noscripts --justdb \
+	--ignoresize --root $NBD_PATH $PACKAGESRPM >/dev/null 2>&1
+
+	[ $? -ne 0 ] && error_msg "Failed to install packages to CT $VEID" \
+	$ERR_TMPL
+
+	clean_environment
+
+	# Fix permissions
+	for i in $PACKAGESRPM; do
+		fixperms_fc11 $i
+	done
+else
+	install_packages_rpm
+fi
+
+clean_environment
+
+msg $MSG_INFO "Changing config files..."
+
+if [ $USE_UPSTART = "yes" ]; then
+
+	# Recreate tty scripts
+	for i in tty1 tty2 tty3 tty4 tty5 tty6; do
+	echo "# $i - getty
+#
+# This service maintains a getty on $i from the point the system is
+# started until it is shut down again.
+
+start on stopped rc2
+start on stopped rc3
+start on stopped rc4
+
+stop on runlevel 0
+stop on runlevel 1
+stop on runlevel 6
+
+respawn
+exec /sbin/mingetty $i
+" > $NBD_PATH/etc/event.d/$i
+	done
+fi
+
+# Fix syslog
+if [ -f $NBD_PATH/etc/init.d/$SYSLOG_SCRIPT ]; then
+	mv -f $NBD_PATH/etc/init.d/$SYSLOG_SCRIPT "$NBD_PATH/etc/init.d/$SYSLOG_SCRIPT"_vz
+	cat "$NBD_PATH/etc/init.d/$SYSLOG_SCRIPT"_vz | \
+	sed "s,passed klogd skipped #,,g" | \
+	sed "s,#status klogd,status klogd,g" > \
+	$NBD_PATH/etc/init.d/$SYSLOG_SCRIPT && \
+	chmod 0755 $NBD_PATH/etc/init.d/$SYSLOG_SCRIPT; \
+	rm -f "$NBD_PATH/etc/init.d/$SYSLOG_SCRIPT"_vz || \
+	mv -f "$NBD_PATH/etc/init.d/$SYSLOG_SCRIPT"_vz $NBD_PATH/etc/init.d/$SYSLOG_SCRIPT
+fi
+
+# Fix fstab
+fix_fstab
+
+if [ $USE_UPSTART = "no" ]; then
+# Add back mingettys to /etc/inittab
+	add_mingettys
+fi
+
+# Remove vzreboot
+rm -f $NBD_PATH/etc/rc.d/rc6.d/S00vzreboot >/dev/null 2>&1
+
+# Tune grub.conf
+echo "
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+timeout=5
+default=1
+" > $NBD_PATH/boot/grub/grub.conf
+
+if [ ! -f $NBD_PATH/boot/grub/menu.lst ]; then
+	ln -s ./grub.conf $NBD_PATH/boot/grub/menu.lst
+fi
+
+msg $MSG_INFO "Configuring network..."
+
+mv $NBD_PATH/etc/sysconfig/network \
+$NBD_PATH/etc/sysconfig/network_vzdev
+cat $NBD_PATH/etc/sysconfig/network_vzdev | grep -v ^IPV6_DEFAULTDEV \
+> $NBD_PATH/etc/sysconfig/network
+rm -f $NBD_PATH/etc/sysconfig/network_vzdev >/dev/null 2>&1
+rm -f $NBD_PATH/etc/sysconfig/network-scripts/*vzdev* >/dev/null 2>&1
+
+if [ -f $NBD_PATH/etc/sysconfig/network-scripts/ifcfg-eth0 ]; then
+	mv -f $NBD_PATH/etc/sysconfig/network-scripts/ifcfg-eth0 \
+	$NBD_PATH/etc/sysconfig/network-scripts/ifcfg-eth0_pre_migrate
+fi
+
+if [ "x$IP_ADDRESS" != "0.0.0.0" ]; then
+	NETDEVICE="eth0"
+	NETDEVICE_COUNT=0
+	for i in $IP_ADDRESS; do
+		if [ $NETDEVICE_COUNT -gt 0 ]; then
+			NETDEVICE="eth0:$((NETDEVICE_COUNT-1))"
+		fi
+		echo "DEVICE=$NETDEVICE
+ONBOOT=yes
+IPADDR=$i
+NETMASK=255.255.255.0
+" > $NBD_PATH/etc/sysconfig/network-scripts/ifcfg-$NETDEVICE
+		NETDEVICE_COUNT=$((NETDEVICE_COUNT+1))
+	done
+fi
+
+set_nameserver
+
+msg $MSG_INFO "Configuring kernel..."
+
+AVAILABLE_KERNELS=`find $NBD_PATH/boot -name vmlinuz*`
+
+[ "x$AVAILABLE_KERNELS" = "x" ] && error_msg "No any kernel available" \
+$ERR_TMPL
+
+# Make root device
+for i in $INSTDEVICE /dev/root; do
+	/bin/mknod $NBD_PATH/$i b $DEVMAJOR $DEVMINOR >/dev/null 2>&1
+	/bin/chmod 660 $NBD_PATH/$i >/dev/null 2>&1
+done
+
+# Get kernel version and write it to grub
+for i in $AVAILABLE_KERNELS; do
+	KERN_VERSION=`echo $i | sed "s,.*vmlinuz-,,g"`;
+
+	# Update depmod
+	/usr/sbin/chroot $NBD_PATH /sbin/depmod $KERN_VERSION >/dev/null 2>&1
+
+	# Create proper initrd
+	rm -f $NBD_PATH/boot/initrd-$KERN_VERSION.img
+	/usr/sbin/chroot $NBD_PATH /sbin/mkinitrd $INITRD_OPTS \
+	/boot/initrd-$KERN_VERSION.img $KERN_VERSION >/dev/null 2>&1
+
+	[ ! -f $NBD_PATH/boot/initrd-$KERN_VERSION.img ] && \
+	error_msg "Failed to create initrd image" $ERR_TMPL
+
+	echo "
+title $TMPLTITLE ($KERN_VERSION)
+	root (hd0,0)
+	kernel /boot/vmlinuz-$KERN_VERSION ro root=$INSTDEVICE
+	initrd /boot/initrd-$KERN_VERSION.img
+" >> $NBD_PATH/boot/grub/grub.conf
+
+done
+
+exit 0

@@ -1,0 +1,311 @@
+#!/bin/bash
+
+SCRIPT_NAME=`basename $0`
+
+SCRIPTVERSION=3
+NEEDSPACE=160000
+
+DATADIR="/usr/share/libvznbdmig"
+
+. $DATADIR/ct2vmlib
+
+#getmigscript $SCRIPT_NAME >/dev/null 2>&1
+TMPLOSNAME=ubuntu
+TMPLVERSION=10.04
+TMPLARCH=x86_64
+
+if [ $TMPLARCH = x86 ]; then
+	TMPLENV="dpkg"
+else
+	TMPLENV="dpkgx64"
+fi
+
+RUN_FROM_CHROOT="$DATADIR/run_from_chroot /vz/pkgenv/$TMPLENV"
+VEID=$1
+NBD_PATH=$2
+MSG_LEVEL=$3
+CHECK_PACKAGES=$4
+INITRD="initrd_createinitrd.img"
+
+case "$TMPLOSNAME" in
+	debian)
+		if [ $TMPLARCH = x86 ]; then
+			CT2VM_PACKAGES_ADD="linux-image-2.6-686 grub"
+		else
+			CT2VM_PACKAGES_ADD="linux-image-2.6-amd64 grub"
+		fi
+		INSTDEVICE="/dev/hda1"
+		DEVMAJOR=3
+		DEVMINOR=1
+		case "$TMPLVERSION" in
+			5.0)
+				TMPLTITLE="Debian 5.0"
+				ADD_MODULES="ide-core.ko ide-pci-generic.ko piix.ko ide-disk.ko jbd.ko mbcache.ko ext3.ko"
+				;;
+			*)
+				TMPLTITLE="Debian"
+				ADD_MODULES="ide-core.ko ide-pci-generic.ko piix.ko ide-disk.ko jbd.ko mbcache.ko ext3.ko"
+				;;
+		esac
+		;;
+	ubuntu)
+		CT2VM_PACKAGES_ADD="linux grub"
+		INSTDEVICE="/dev/sda1"
+		DEVMAJOR=8
+		DEVMINOR=1
+		case "$TMPLVERSION" in
+			10.04)
+				TMPLTITLE="Ubuntu 10.04"
+				ADD_MODULES=""
+				;;
+			9.10)
+				TMPLTITLE="Ubuntu 9.10"
+				ADD_MODULES=""
+				;;
+			9.04)
+				TMPLTITLE="Ubuntu 9.04"
+				ADD_MODULES=""
+				;;
+			8.10)
+				TMPLTITLE="Ubuntu 8.10"
+				ADD_MODULES="scsi_mod.ko dock.ko libata.ko ata_piix.ko crc-t10dif.ko sd_mod.ko jbd.ko mbcache.ko ext3.ko"
+				;;
+			8.04)
+				TMPLTITLE="Ubuntu 8.04"
+				ADD_MODULES="scsi_mod.ko dock.ko libata.ko ata_piix.ko sd_mod.ko jbd.ko mbcache.ko ext3.ko"
+				;;
+			*)
+				TMPLTITLE="Ubuntu"
+				ADD_MODULES="scsi_mod.ko dock.ko libata.ko ata_piix.ko crc-t10dif.ko sd_mod.ko jbd.ko mbcache.ko ext3.ko"
+				;;
+		esac
+		;;
+esac
+
+. /etc/vz/conf/$VEID.conf
+. /etc/vz/vz.conf
+
+function usage() {
+	echo "Usage: $1 CTID NBD_PATH MSG_LEVEL [check_packages]"
+}
+
+function cleanup(){
+	return 0
+}
+
+if [ "x$VEID" = "x" ]; then
+	usage
+	error_msg "You should give CT_IT" $ERR_TMPL
+fi
+
+if [ "x$CHECK_PACKAGES" = "xcheck_packages" ]; then
+	$VZPKG install $VEID -q -n -p $CT2VM_PACKAGES_ADD >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		error_msg "Can't download packages $CT2VM_PACKAGES_ADD" $ERR_TMPL
+	else
+		exit 0
+	fi
+fi
+
+if [ ! -d $NBD_PATH ] || [ "x$NBD_PATH" = "x" ] || [ "x$NBD_PATH" = "/" ]; then
+	usage
+	error_msg "You should give right NBD_PATH ($NBD_PATH)" $ERR_TMPL
+fi
+
+if [ "x$INSTDEVICE" = "x" ]; then
+	usage
+	error_msg "You should give device" $ERR_TMPL
+fi
+
+# Create devices
+/bin/mknod $NBD_PATH/dev/null c 1 3 >/dev/null 2>&1
+/bin/chmod 666 $NBD_PATH/dev/null >/dev/null 2>&1
+
+# Install packages
+install_packages_deb
+
+msg $MSG_INFO "Changing config files..."
+
+# Move back upstart configs
+if [ "$TMPLOSNAME-$TMPLVERSION" = "ubuntu-9.10" ] \
+    || [ "$TMPLOSNAME-$TMPLVERSION" = "ubuntu-10.04" ]; then
+	mv -f $NBD_PATH/etc/init.removed/* $NBD_PATH/etc/init >/dev/null 2>&1
+fi
+
+# Fix fstab
+mv -f $NBD_PATH/etc/fstab $NBD_PATH/etc/fstab.orig
+cat $NBD_PATH/etc/fstab.orig | grep -v " / " | grep -v "/dev/pts" > $NBD_PATH/etc/fstab
+echo "
+$INSTDEVICE / ext3 defaults 1 1
+" >> $NBD_PATH/etc/fstab
+
+# Add back gettys to /etc/inittab
+
+cat $NBD_PATH/etc/inittab | grep -e ^[1-6]: >/dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+	echo "
+1:2345:respawn:/sbin/getty 38400 tty1
+2:2345:respawn:/sbin/getty 38400 tty2
+3:2345:respawn:/sbin/getty 38400 tty3
+4:2345:respawn:/sbin/getty 38400 tty4
+5:2345:respawn:/sbin/getty 38400 tty5
+6:2345:respawn:/sbin/getty 38400 tty6
+" >> $NBD_PATH/etc/inittab
+fi
+
+# Remove vzreboot
+rm -f $NBD_PATH/etc/rc6.d/S00vzreboot >/dev/null 2>&1
+
+# Create /selinux
+if [ ! -d $NBD_PATH/selinux ]; then
+	mkdir $NBD_PATH/selinux
+fi
+
+# Tune grub.conf
+echo "
+timeout=5
+default=1
+" > $NBD_PATH/boot/grub/grub.conf
+
+if [ ! -f $NBD_PATH/boot/grub/menu.lst ]; then
+	ln -s ./grub.conf $NBD_PATH/boot/grub/menu.lst
+fi
+
+msg $MSG_INFO "Configuring network..."
+
+mv -f $NBD_PATH/etc/network/interfaces $NBD_PATH/etc/network/interfaces_pre_migrate \
+>/dev/null 2>&1
+cp $NBD_PATH/etc/network/interfaces.template $NBD_PATH/etc/network/interfaces \
+>/dev/null 2>&1
+
+if [ "x$IP_ADDRESS" != "0.0.0.0" ]; then
+	NETDEVICE="eth0"
+	NETDEVICE_COUNT=0
+	for i in $IP_ADDRESS; do
+		if [ $NETDEVICE_COUNT -gt 0 ]; then
+			NETDEVICE="eth0:$((NETDEVICE_COUNT-1))"
+		fi
+		echo "
+auto $NETDEVICE
+iface $NETDEVICE inet static
+	address $i
+	netmask 255.255.255.0
+	broadcast 0.0.0.0
+" >> $NBD_PATH/etc/network/interfaces
+		NETDEVICE_COUNT=$((NETDEVICE_COUNT+1))
+	done
+fi
+
+set_nameserver
+
+msg $MSG_INFO "Configuring kernel..."
+
+AVAILABLE_KERNELS=`find $NBD_PATH/boot -name vmlinuz*`
+
+[ "x$AVAILABLE_KERNELS" = "x" ] && error_msg "No any kernel available" \
+$ERR_TMPL
+
+# Make root device
+for i in $INSTDEVICE /dev/root; do
+	/bin/mknod $NBD_PATH/$i b $DEVMAJOR $DEVMINOR >/dev/null 2>&1
+	/bin/chmod 660 $NBD_PATH/$i >/dev/null 2>&1
+done
+
+# Create empty custom modules file
+touch $NBD_PATH/etc/initramfs-tools/modules
+
+# Get kernel version and write it to grub
+for i in $AVAILABLE_KERNELS; do
+	KERN_VERSION=`echo $i | sed "s,.*vmlinuz-,,g"`;
+
+	# Update depmod
+	/usr/sbin/chroot $NBD_PATH /sbin/depmod $KERN_VERSION >/dev/null 2>&1
+
+	INITRDTEMPDIR=`mktemp -d /tmp/migrate_initrdXXXXXX`
+
+	[ "x$INITRDTEMPDIR" = "x" ] || [ ! -d $INITRDTEMPDIR ] && \
+	error_msg "Failed to create temporary dir" $ERR_TMPL
+
+	cp -a $DATADIR/initrd $INITRDTEMPDIR
+
+	for i in $ADD_MODULES; do
+		MODULE=`find /vz/template/$TMPLOSNAME/$TMPLVERSION/$TMPLARCH/*$KERN_VERSION* -name $i`
+		if [ -f "$MODULE" ]; then
+			cp $MODULE $INITRDTEMPDIR/initrd/lib/ >/dev/null 2>&1
+		else
+			error_msg "Failed to find module $i" $ERR_TMPL
+		fi
+	done
+
+	echo "#!/bin/nash
+
+mknod $INSTDEVICE b $DEVMAJOR $DEVMINOR
+" > $INITRDTEMPDIR/initrd/bin/load_modules
+
+for ADD_MODULE in $ADD_MODULES; do
+	echo "
+echo \"Loading $ADD_MODULE module\"
+insmod /lib/$ADD_MODULE
+" >> $INITRDTEMPDIR/initrd/bin/load_modules
+done
+
+	chmod 0755 $INITRDTEMPDIR/initrd/bin/load_modules
+
+	pushd $INITRDTEMPDIR/initrd >/dev/null 2>&1
+	find * | cpio -c -o > ../$INITRD 2>/dev/null
+	popd >/dev/null 2>&1
+
+	if [ ! -f $INITRDTEMPDIR/$INITRD ]; then
+		rm -rf $INITRDTEMPDIR >/dev/null 2>&1
+		error_msg "Failed to create initrd" $ERR_TMPL
+	fi
+
+	mv $INITRDTEMPDIR/$INITRD $NBD_PATH/boot/$INITRD-$KERN_VERSION >/dev/null 2>&1
+
+	rm -rf $INITRDTEMPDIR >/dev/null 2>&1
+
+	mkdir -p $NBD_PATH/$DATADIR >/dev/null 2>&1
+	echo "#!/bin/bash
+
+PATH=\"/sbin:/usr/sbin:\$PATH\"
+export PATH
+
+mount -o remount,rw /
+
+# Create proper initrd
+/usr/sbin/update-initramfs -c -k all
+
+if [ \$? -eq 0 ]; then
+	echo \"
+timeout=5
+default=0
+
+title $TMPLTITLE (\`uname -r\`)
+	root (hd0,0)
+	kernel /boot/vmlinuz-\`uname -r\` ro root=$INSTDEVICE quiet splash
+	initrd /boot/initrd.img-\`uname -r\`
+\" > /boot/grub/grub.conf
+
+fi
+
+mount -o remount,ro /
+
+sync
+
+reboot -fn
+" > $NBD_PATH/$DATADIR/create_initrd
+	chmod 0755 $NBD_PATH/$DATADIR/create_initrd >/dev/null 2>&1
+
+	touch $NBD_PATH/var/lib/initramfs-tools/$KERN_VERSION
+
+	echo "
+title Create Initrd ($KERN_VERSION)
+	root (hd0,0)
+	kernel /boot/vmlinuz-$KERN_VERSION ro root=$INSTDEVICE init=$DATADIR/create_initrd
+	initrd /boot/$INITRD-$KERN_VERSION
+" >> $NBD_PATH/boot/grub/grub.conf
+
+done
+
+exit 0

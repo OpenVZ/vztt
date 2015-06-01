@@ -1,0 +1,150 @@
+#!/bin/bash
+
+function move_file() {
+	[ $# -eq 2 ] || exit 1
+	local src=$1 dst=$2
+
+	chown --reference=$dst $src || exit 1 
+	chmod --reference=$dst $src || exit 1 
+	mv -f $src $dst
+}
+
+pushd / >/dev/null
+
+ln -sf /proc/mounts etc/mtab
+
+
+# omit syncing for all log files
+CFG_FILE=etc/syslog.conf
+if [ -f $CFG_FILE ]; then
+    sed -e "s#\(news.*[[:blank:]]\)/var/log#\\\1-/var/log#wq\n" \
+		$CFG_FILE > ${CFG_FILE}.$$ && \
+	move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+
+
+
+# Convert system to shadow password files
+usr/sbin/pwconv
+
+# do not launch getty on tty devices - they are not accessible from VE
+echo -e ",g/^.*\/sbin\/getty.*/d\nwq\n" | ed -s etc/inittab
+
+
+echo -e "
+auto lo
+iface lo inet loopback
+	address 127.0.0.1
+	netmask 255.0.0.0
+	broadcast 127.255.255.255
+	up ip route replace 127.0.0.0/8 dev lo
+" > etc/network/interfaces.template
+
+
+# disable all xinetd services without disable option
+CFG_FILE=/etc/xinetd.conf
+if [ -f $CFG_FILE ]; then
+	CFG_TEMP=`mktemp $CFG_FILE.XXXXXX`
+	awk -f - << 'EOF' $CFG_FILE > $CFG_TEMP 
+BEGIN {
+        lopen=0;
+        lfound=0;
+}
+/^service .*/{
+        print $0;
+        lopen=1;
+        lfound=0;
+        next;
+}
+/^.*disable .*/{
+        print $0;
+        lfound=1;
+        next;
+}
+/^\}.*/{
+        if (!lfound)
+                print "	disable		= yes";
+        print $0;
+        lopen=0;
+        next;
+}
+{
+        print $0;
+}
+EOF
+	[ $? -eq 0 ] && \
+		move_file $CFG_TEMP $CFG_FILE > /dev/null 2>&1
+fi
+
+
+# to fix "World writable file error in sendmail log"
+# files from libsasl-digestmd5-plain
+chmod 755 usr/lib/sasl2/libdigestmd5.so.2.0.19
+chmod 755 usr/lib/sasl2/libcrammd5.so.2.0.19
+chmod 755 usr/lib/sasl2/libanonymous.so.2.0.19
+chmod 755 usr/lib/sasl2/libplain.so.2.0.19
+chmod 755 usr/lib/sasl2/liblogin.so.2.0.19
+chown -R root.root usr/share/doc/apache2-doc/manual/*
+
+
+# turn off and stop some services
+for i in klogd bind9 quotarpc nscd inetd lprng samba anacron atd shaper fetchmail portmap courier-authdaemon; do
+	usr/sbin/update-rc.d -f $i remove > /dev/null 2>&1
+	etc/init.d/$i stop > /dev/null 2>&1
+done
+
+#create ptmx device
+CFG_FILE=etc/rc.local
+if [ -f $CFG_FILE ]; then
+	grep -v "^exit 0" $CFG_FILE > ${CFG_FILE}.$$
+	echo "if [ ! -a /dev/ptmx ] ; then
+	cd /dev
+	./MAKEDEV ptmx
+fi" >> ${CFG_FILE}.$$
+	echo "exit 0" >> ${CFG_FILE}.$$
+	move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+#export PATH
+CFG_FILE=etc/bash.bashrc
+if [ -f $CFG_FILE ] ; then
+	echo "export PATH" >> $CFG_FILE
+fi
+
+
+# apache tuning
+CFG_FILE=etc/apache2/apache2.conf
+if [ -f $CFG_FILE ]; then
+    sed -e "s/^StartServers[[:blank:]]*.*/StartServers       1/" \
+	-e "s/^MinSpareServers[[:blank:]]*.*/MinSpareServers    1/" \
+	-e "s/^MaxSpareServers[[:blank:]]*.*/MaxSpareServers    5/" \
+	-e "s/^ServerLimit[[:blank:]]*.*/ServerLimit       10/" \
+	-e "s/^MaxClients[[:blank:]]*.*/MaxClients        10/" \
+	-e "s/^MinSpareThreads[[:blank:]]*.*/MinSpareThreads    1/" \
+	-e "s/^MaxSpareThreads[[:blank:]]*.*/MaxSpareThreads    4/" \
+	$CFG_FILE > ${CFG_FILE}.$$ && \
+		move_file ${CFG_FILE}.$$ $CFG_FILE > /dev/null 2>&1
+fi
+
+
+
+# and disable root user
+/usr/sbin/usermod -L root
+
+# do not execute some cron-jobs by default
+rm -rf /etc/cron.d/*
+rm -f `find /etc/cron.daily/ -type f | grep -v "logrotate\|sysklogd"`
+rm -rf /etc/cron.weekly/*
+rm -rf /etc/cron.monthly/*
+
+# move post files from /
+MAILF=d???????????????
+[ -n "$MAILF" ] && rm -f $MAILF
+#[ -n "$MAILF" ] && mv $MAILF var/spool/mail/
+MAILF=Q???????????????
+[ -n "$MAILF" ] && rm -f $MAILF
+#[ -n "$MAILF" ] && mv $MAILF var/spool/mail/
+
+popd > /dev/null
+

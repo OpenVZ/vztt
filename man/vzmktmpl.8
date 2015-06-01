@@ -1,0 +1,63 @@
+.\" $Id$
+.TH vzmktmpl 8 "October 2009" "@PRODUCT_NAME_LONG@"
+.SH NAME
+\fBvzmktmpl\fR \- a tool for @PRODUCT_NAME_LONG@ template building.
+.SH SYNOPSYS
+\fBvzmktmpl\fR [\fIoptions\fR] \fImetafile\fR
+.SH DESCRIPTION
+A tool for @PRODUCT_NAME_LONG@ template building.
+Creates a @PRODUCT_NAME_LONG@ template and saves it as an rpm package.
+Uses metafile as a source.
+.SH OPTIONS
+.TP
+\fB\-\-pre-cache\fR \fBFILE\fR
+To add a pre-cache script. The script will be run by \fBvzpkg\fR \fBcache\fR before the package installation in \fICT0\fR context.
+.TP
+\fB\-\-post-cache\fR \fBFILE\fR
+To add a post-cache script. The script will be run by \fBvzpkg\fR \fBcache\fR after the package installation in \fICT0\fR context.
+.TP
+\fB\-\-pre-install\fR \fBFILE\fR
+To add a pre-install script. The script will be run by \fBvzpkg\fR \fBinstall\fR before the package installation in a \fICT\fR context.
+.TP
+\fB\-\-post-install\fR \fBFILE\fR
+To add a post-install script. The script will be run by \fBvzpkg\fR \fBcache\fR or \fBvzpkg\fR \fBinstall\fR after the package installation in a \fICT\fR context.
+.TP
+\fB\-\-pre-upgrade\fR \fBFILE\fR
+To add a pre-upgrade script. The script will be run by \fBvzpkg\fR \fBupgrade\fR before the CT upgrade to this template in a \fICT\fR context.
+.TP
+\fB\-\-post-upgrade\fR \fBFILE\fR
+To add a post-upgrade script. The script will be run by \fBvzpkg\fR \fBupgrade\fR after the CT upgrade to this template in a \fICT\fR context.
+.TP
+\fB\-\-pre-update\fR \fBFILE\fR
+To add a pre-update script. The script will be run by \fBvzpkg\fR \fBupdate\fR before the package update in a \fICT\fR context.
+.TP
+\fB\-\-post-update\fR \fBFILE\fR
+To add a post-update script. The script will be run by \fBvzpkg\fR \fBupdate\fR after the package update in a \fICT\fR context.
+.TP
+\fB\-\-pre-remove\fR \fBFILE\fR
+To add a pre-remove script. The script will be run by \fBvzpkg\fR \fBremove\fR before the package removal in a \fICT\fR context.
+.TP
+\fB\-\-post-remove\fR \fBFILE\fR
+To add a post-remove script. The script will be run by \fBvzpkg\fR \fBremove\fR after the package removal in a \fICT\fR context.
+.TP
+\fB\-\-environment\fR \fBFILE\fR
+To add a file with environment variables list. This is a file of strings of the form key=value. This list will be used for OS template create/update cache commands only. These variables will be exported into \fICT\fR environment during packages scripts execution.
+.TP
+\fB\-d\fR, \fB\-\-doc\fR \fBFILE\fR
+To add a doc file.
+.TP
+\fB\-s\fR, \fB\-\-spec-only\fR
+To create the spec file only.
+.TP
+\fB\-r\fR, \fB\-\-srpm\fR
+To build the source rpm only.
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+To print help message and exit.
+.SH DIAGNOSTICS
+Returns 0 on successful execution.
+.SH SEE ALSO
+.BR vzpkg (8).
+.BR vzpkg.metafile (5).
+.SH COPYRIGHT
+Copyright (c) 2006-@LAST_COPYRIGHT_YEAR@, @COPYRIGHT_OWNER@. All rights reserved.

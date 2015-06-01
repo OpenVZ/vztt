@@ -1,0 +1,87 @@
+#!/bin/sh
+
+CT_ID=$1
+CT2VM_PACKAGES_RM="vzdummy-jre-fc6 vzdummy-kernel-el5 vzdummy-apache vzdev vzdummy-glibc sysklogd"
+CT2VM_PACKAGES_ADD="kernel grub sysklogd"
+. /etc/vz/conf/$CT_ID.conf
+. /etc/vz/vz.conf
+
+abort(){
+    echo $@
+    exit 1
+}
+
+if [ "x$CT_ID" = "x" ]; then
+    usage
+    abort "You should give CT_IT"
+fi
+
+# Remove and install packages
+if [ "x$CT2VM_PACKAGES_RM" != "x" ]; then
+    /usr/sbin/vzpkg remove -q $CT_ID -f -p $CT2VM_PACKAGES_RM
+
+    if [ $? -ne 0 ]; then
+	clean
+	abort "Failed to remove packages from CT $CT_ID"
+    fi
+fi
+
+if [ "x$CT2VM_PACKAGES_ADD" != "x" ]; then
+    /usr/sbin/vzpkg install -q $CT_ID -f -p $CT2VM_PACKAGES_ADD
+
+    if [ $? -ne 0 ]; then
+	clean
+	abort "Failed to install packages to CT $CT_ID"
+    fi
+fi
+
+# Add back mingettys to /etc/inittab
+
+cat $VE_ROOT/etc/inittab | grep -e ^[1-6]: >/dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+echo "
+1:2345:respawn:/sbin/mingetty tty1
+2:2345:respawn:/sbin/mingetty tty2
+3:2345:respawn:/sbin/mingetty tty3
+4:2345:respawn:/sbin/mingetty tty4
+5:2345:respawn:/sbin/mingetty tty5
+6:2345:respawn:/sbin/mingetty tty6
+" >> $VE_ROOT/etc/inittab
+fi
+
+# Tune grub.conf
+echo "
+splashimage=(hd0,0)/boot/grub/splash.xpm.gz
+timeout=5
+default=1
+" > $VE_ROOT/boot/grub/grub.conf
+
+if [ ! -f $VE_ROOT/boot/grub/menu.lst ]; then
+    ln -s ./grub.conf $VE_ROOT/boot/grub/menu.lst
+fi
+
+AVAILABLE_KERNELS=`find $VE_ROOT/boot -name vmlinuz*`
+
+if [ "x$AVAILABLE_KERNELS" = "x" ]; then
+    abort "No any kernel available"
+fi
+
+# Get kernel version and write it to grub
+for i in $VE_ROOT/boot/vmlinuz-*; do
+    KERN_VERSION=`echo $i | sed "s,.*vmlinuz-,,g"`;
+
+    # Create proper initrd
+    rm -f $VE_ROOT/boot/initrd-$KERN_VERSION.img
+    vzctl exec $CT_ID "/sbin/mkinitrd --with=mptspi /boot/initrd-$KERN_VERSION.img $KERN_VERSION" >/dev/null 2>&1
+
+echo "
+title @PRODUCT_NAME_LONG@ ($KERN_VERSION)
+	root (hd0,0)
+	kernel /boot/vmlinuz-$KERN_VERSION ro root=/dev/sda1
+	initrd /boot/initrd-$KERN_VERSION.img
+" >> $VE_ROOT/boot/grub/grub.conf
+
+done
+
+exit 0

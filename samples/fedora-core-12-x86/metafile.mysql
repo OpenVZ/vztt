@@ -1,0 +1,29 @@
+%osname
+fedora-core
+
+%osver
+12
+
+%osarch
+x86
+
+%appname
+mysql
+
+%version
+4.0.0
+%release
+1.swsoft
+%summary
+MySQL for Fedora 12 EZ Template
+%license
+Parallels
+
+%packages
+mysql-server
+mysql-devel
+mysql-bench
+perl-DBD-MySQL
+
+%description
+MySQL for Fedora 12 packaged as a @PRODUCT_NAME_LONG@ EZ Template.

@@ -1,0 +1,503 @@
+.\" $Id$
+.TH vzpkg 8 "March 2010" "@PRODUCT_NAME_LONG@"
+.SH NAME
+\fBvzpkg\fR \- tool for managing @PRODUCT_NAME_LONG@ templates.
+.SH SYNOPSYS
+\fBvzpkg\fR \fBinstall\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR \fIobject\fR [\fIobject\fR ...]
+
+\fBvzpkg\fR \fBupdate\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR [\fIobject\fR ...]
+
+\fBvzpkg\fR \fBremove\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR \fIobject\fR [\fIobject\fR ...]
+
+\fBvzpkg\fR \fBlocalinstall\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR \fIrpmfile\fR [\fIrpmfile\fR ...]
+
+\fBvzpkg\fR \fBlocalupdate\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR \fIrpmfile\fR [\fIrpmfile\fR ...]
+
+\fBvzpkg\fR \fBlist\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR [\fICT\ ID\fR | \fICT\ NAME\fR ...] [--available]
+
+\fBvzpkg\fR \fBlist\fR [\fIoptions\fR] [\fIostemplate\fR ...] [--available]
+
+\fBvzpkg\fR \fBcreate\fR \fBcache\fR [\fIoptions\fR] [\fIostemplate\fR ...]
+
+\fBvzpkg\fR \fBupdate\fR \fBcache\fR [\fIoptions\fR] [\fIostemplate\fR ...]
+
+\fBvzpkg\fR \fBremove\fR \fBcache\fR [\fIoptions\fR] [\fIostemplate\fR ...]
+
+\fBvzpkg\fR \fBcreate\fR \fBappcache\fR [\fIoptions\fR]
+
+\fBvzpkg\fR \fBupdate\fR \fBappcache\fR [\fIoptions\fR]
+
+\fBvzpkg\fR \fBremove\fR \fBappcache\fR [\fIoptions\fR]
+
+\fBvzpkg\fR \fBlist\fR \fBappcache\fR
+
+\fBvzpkg\fR \fBinfo\fR [\fIoptions\fR] [\fI-F\fR \fIostemplate\fR | \fICT\ ID\fR | \fICT\ NAME\fR] \fIobject\fR | \fICT\ ID\fR | \fICT\ NAME\fR [\fIparameter\fR ...]
+
+\fBvzpkg\fR \fBinstall\fR \fBtemplate\fR [\fIoptions\fR] [\fI-F\fR \fIostemplate\fR] \fIobject\fR ...
+
+\fBvzpkg\fR \fBupdate\fR \fBtemplate\fR [\fIoptions\fR] [\fI-F\fR \fIostemplate\fR] \fIobject\fR ...
+
+\fBvzpkg\fR \fBremove\fR \fBtemplate\fR [\fIoptions\fR] [\fI-F\fR \fIostemplate\fR] \fIobject\fR ...
+
+\fBvzpkg\fR \fBupgrade\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR
+
+\fBvzpkg\fR \fBfetch\fR [\fIoptions\fR] \fIostemplate\fR [\fIostemplate\fR ...]
+
+\fBvzpkg\fR \fBupdate\fR \fBmetadata\fR [\fIoptions\fR] [\fIostemplate\fR ...]
+
+\fBvzpkg\fR \fBlink\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR
+
+\fBvzpkg\fR \fBclean\fR [\fIoptions\fR] [\fIostemplate\fR ...]
+
+\fBvzpkg\fR \fBstatus\fR [\fIoptions\fR] \fIostemplate\fR | \fICT\ ID\fR | \fICT\ NAME\fR
+
+\fBvzpkg\fR \fBupgrade\fR \fBarea\fR [\fIoptions\fR] \fIostemplate\fR ...
+
+\fBvzpkg\fR \fBhelp\fR
+
+.SH DESCRIPTION
+@PRODUCT_NAME_LONG@ management tool for handling EZ templates and
+standalone RPM/DPKG packages and RPM packages groups.
+.SS Commands
+.TP
+\fBinstall\fR
+Install an object (application template or RPM package) into the Container \fICT\ ID\fR|\fICT\ NAME\fR.
+Multiple \fIobjects\fR can be specified at once.
+If an application template is not installed on the Node, it will be downloaded from the \fBvzup2date\fR repository.
+.TP
+\fBupdate\fR
+Update an object in the Container \fICT\ ID\fR|\fICT\ NAME\fR if a newer version is available.
+If an application template is not installed on the Node, it will be downloaded from the \fBvzup2date\fR repository.
+If no \fIobject\fR is specified, update all installed packages. If the \fI\-t\fR|\fI\-\-template\fR option is specified, update
+all installed templates.
+.TP
+\fBremove\fR
+Remove an object from the Container \fICT\ ID\fR|\fICT\ NAME\fR.
+.TP
+\fBlocalinstall\fR
+Install a local RPM file into the Container \fICT\ ID\fR|\fICT\ NAME\fR.
+.TP
+\fBlocalupdate\fR
+Update the Container \fICT\ ID\fR|\fICT\ NAME\fR from the specified local RPM file.
+.TP
+\fBlist\fR
+List the \fIobjects\fR installed on the Node in the following format:
+.br
+OS template [application template] [last update date and time]
+.br
+If \fICT\ ID\fR|\fICT\ NAME\fR is specified, list the \fIobjects\fR installed in the Container.
+If \fIostemplate\fR is specified, list the \fIobjects\fR available for this OS template.
+Otherwise, list the \fIobjects\fR available for all OS templates.
+If \fI--available\fR is specified list templates available for installation.
+.TP
+\fBcreate\fR \fBcache\fR
+Create a cache of the OS template \fIostemplate\fR. 
+The command returns an error if the cache already exists.
+If the specified OS template is not installed on the Node, it will be downloaded from the \fBvzup2date\fR repository.
+You can specify several OS templates at once. If no OS templates are specified, 
+all uncached OS templates on the Node will be cached.
+.TP
+\fBupdate\fR \fBcache\fR
+Update the cache of the OS template \fIostemplate\fR if newer packages
+are available or create a cache if it does not exist. If the specified OS template is not installed on the Node, 
+it will be downloaded from the \fBvzup2date\fR repository.
+You can specify multiple OS templates at once. If no OS templates are specified,
+all available OS templates will be updated/cached.
+.TP
+\fBremove\fR \fBcache\fR
+Remove the cache of the OS template \fIostemplate\fR.
+You can specify multiple OS templates at once. If no OS templates are specified,
+all OS template caches will be removed from the Node.
+.TP
+\fBcreate\fR \fBappcache\fR
+Create the cache for OS template with application templates.
+Returns error if cache already exists.
+If the specified OS template is not installed on the Node, it will be downloaded from the \fBvzup2date\fR repository.
+.TP
+\fBupdate\fR \fBappcache\fR
+Update the cache for OS template with application templates.
+If the specified OS template is not installed on the Node, it will be downloaded from the \fBvzup2date\fR repository.
+.TP
+\fBremove\fR \fBappcache\fR
+Remove the cache for OS template with application templates.
+.TP
+\fBlist\fR \fBappcache\fR
+List all caches for OS templates with application templates.
+.TP
+\fBinfo\fR
+Show the information about the specified OS template, application template, 
+package, or Container \fICT\ ID\fR|\fICT\ NAME\fR.
+To get the information about an application template or a package, 
+specify the corresponding Container ID or OS template (using the \fB\-F\fR|\fB\-\-for-os\fR option).
+.TP
+\fBinstall\fR \fBtemplate\fR
+Install an application and/or OS template from the specified RPM package or from the \fBvzup2date\fR repository. To install from the repository, specify the template name instead of the name of the respective RPM package.
+To install an application template from the \fBvzup2date\fR repository, indicate the corresponding OS template using the \fB\-F\fR|\fB\-\-for-os\fR option. You can specify multiple \fIobjects\fR (RPM packages or application templates) at once.
+.TP
+\fBupdate\fR \fBtemplate\fR
+Update an application and/or OS template from the specified RPM package or from the \fBvzup2date\fR repository.  To update from the repository, specify the template name instead of the name of the respective RPM package.
+To update an application template from the \fBvzup2date\fR repository, indicate the corresponding OS template using the \fB\-F\fR|\fB\-\-for-os\fR option. You can specify multiple \fIobjects\fR (RPM packages or application templates) at once.
+.TP
+\fBremove\fR \fBtemplate\fR
+Remove an application or OS template from the specified Container.
+To remove an application template, specify the corresponding OS template using the 
+\fB\-F\fR|\fB\-\-for-os\fR option.
+.TP
+\fBupgrade\fR
+Upgrade the Container \fICT\ ID\fR|\fICT\ NAME\fR to use another OS template. Upgrade is possible only within the same distribution and architecture.
+For example, you can upgrade the Container to use fedora-core-5-x86 instead of fedora-core-4-x86.
+All installed application templates are upgraded automatically.
+.TP
+\fBfetch\fR
+Download and prepare packages of the specified OS and 
+related application templates for installation on the Node.
+.TP
+\fBupdate\fR \fBmetadata\fR
+Update the metadata of the specified OS template.
+You should run this command with the \fB\-r\fR|\fB\-\-remote\fR option once you change the template's repositories/mirrorlist file.
+.TP
+\fBlink\fR
+Link the files installed inside a Container to the package set in the corresponding EZ OS template area.
+vzpkg searches the Container private area for the files similar to the ones from the
+template area. Once it finds one or more files, it replaces them with symlinks to the template area.
+.TP
+\fBclean\fR
+Clean repository metadata for the specified OS and related application templates.
+.TP
+\fBstatus\fR
+Report whether the Container is up to date or not. If any updates are available, the command exits with code 2;
+otherwise, it exits with code 0.
+.TP
+\fBhelp\fR
+Display the usage information and exit.
+.SH OPTIONS
+.TP
+\fB\-p\fR, \fB\-\-packages\fR
+Interpret \fIobjects\fR as package names instead of template names by default.
+.TP
+\fB\-g\fR, \fB\-\-groups\fR
+Interpret \fIobjects\fR as yum group names (instead of template names by default).
+This option is available only for RPM-based templates and Containers.
+You can use this option with install, update, remove, list, and info commands.
+.TP
+\fB\-d\fR, \fB\-\-debug\fR <num>
+Set the debug level to <num> [0-5].
+.TP
+\fB\-C\fR, \fB\-\-cache\fR
+Look for the packages in the local cache, do not try to get new packages over the network.
+If some packages are not available locally, vzpkg will fail.
+.TP
+\fB\-r\fR, \fB\-\-remote\fR
+Force to look for the updated metadata in remote repositories.
+.TP
+\fB\-n\fR, \fB\-\-check-only\fR
+Perform a test run.
+.TP
+\fB\-w\fR, \fB\-\-with-depends\fR
+Remove the specified package and all dependent packages.
+.TP
+\fB\-O\fR, \fB\-\-os\fR
+Execute the command for OS templates only.
+.TP
+\fB\-F\fR, \fB\-\-for-os\fR \fIostemplate\fR|\fICT\ ID\fR|\fICT\ NAME\fR
+Apply actions to the specified OS template only. When running the info command, you can also indicate a Container ID.
+.TP
+\fB\-A\fR, \fB\-\-app\fR
+Execute the command for application templates only.
+.TP
+\fB\-c\fR, \fB\-\-cached\fR
+Show cached OS templates only.
+.TP
+\fB\-\-config\fR <config>
+Use the specified sample configuration file for caching OS EZ templates with preinstalled applications.
+.TP
+\fB\-\-ostemplate\fR <ostemplate>
+Use the specified OS EZ template instead of that provided in the sample configuration file.
+.TP
+\fB\-\-apptemplate\fR <apptemplate,apptemplate...>
+Use the specified application EZ templates instead of those provided in the sample configuration file.
+.TP
+\fB\-i\fR, \fB\-\-pkgid\fR
+Print a system-wide unique template ID instead of a template name.
+.TP
+\fB\-S\fR, \-\-with-summary\fR
+Show the list of objects with summary.
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+Force the operation on the specified template or package.
+.TP
+\fB\-e\fR, \fB\-\-expanded\fR
+Use the 'upgrade' mode of the update command: upgrade for yum and dist-upgrade for apt-get.
+It may be useful when upgrading to a new major application version.
+.TP
+\fB\-s\fR, \fB\-\-slow\fR
+Check all installed packages including those that are already virtualized (for the link command only).
+.TP
+\fB\-I\fR, \fB\-\-interactive\fR
+Use the interactive mode of Debian package management.
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Quiet mode.
+.TP
+\fB\-s\fR, \fB\-\-force-shared\fR
+Force the operation for the template area on shared partitions.
+.TP
+\fB\-k\fR, \fB\-\-clean-packages\fR
+Clean the local packages cache (for the clean command only).
+.TP
+\fB\-t\fR, \fB\-\-template\fR, \fB\-\-clean-template\fR (deprecated)
+Remove unused packages from the template area (for the clean command only).
+Update all templates installed in the Container (for the update command only).
+.TP
+\fB\-a\fR, \fB\-\-clean-all\fR
+Clean the local packages cache and template area (for the clean command only).
+.TP
+\fB\-u\fR, \fB\-\-custom-pkg\fR
+Report the list of packages that are installed in the Container but are not available in the template repositories (for the list command only).
+.TP
+\fB\-P\fR, \fB\-\-separate\fR
+Execute the transaction separately for each template.
+.TP
+\fB\-\-update-cache\fR
+Update packages in the existing OS template cache instead of recreating the cache.
+.TP
+\fB\-\-vefstype <VEFSTYPE>\fR
+Redefine the VEFSTYPE parameter in the vz global configuration file.
+.SH DIAGNOSTICS
+\fBvzpkg\fR returns 0 upon successful execution. If something goes wrong, it
+returns an appropriate error code.
+.SS System errors
+.IP "1"
+System error
+.IP "2"
+Internal error
+.IP "3"
+Command execution error
+.IP "4"
+Memory allocation error
+.IP "5"
+vzctl binary was not found
+.IP "6"
+File already exists
+.IP "7"
+@PRODUCT_NAME_LONG@ license is not loaded, or an invalid class ID is set.
+.IP "8"
+Running command exits with non-null code
+.IP "9"
+File or directory was not found
+.IP "10"
+Program runs from a non-root user
+.IP "11"
+Cannot calculate md5sum
+.IP "12"
+Object exists, but it is not a directory
+.IP "13"
+Broken magic symlink was found
+.IP "14"
+Cannot parse string
+.IP "52"
+Cannot fetch file
+.IP "54"
+Cannot get @PRODUCT_NAME_LONG@ service status
+.IP "55"
+@PRODUCT_NAME_LONG@ service is not running
+.IP "56"
+Invalid URL
+.IP "61"
+Cannot get list of existing Containers
+.IP "62"
+vzctl library error
+.IP "63"
+External program failed
+.IP "64"
+External program was terminated by signal
+.IP "67"
+Template metadata was not found. If you use the -C/--cache option with the status command, 
+run the command without this option.
+.IP "21"
+Cannot lock Container or OS template
+.IP "69"
+Cannot unlock Container or OS template
+.IP "70"
+Package manager failed
+.IP "72"
+ploop library error
+.SS Container errors
+.IP "15"
+Container is not running
+.IP "16"
+Container does not exist
+.IP "17"
+Container is suspended
+.IP "18"
+Container is not mounted
+.IP "66"
+Container is not suspended
+.IP "19"
+Container has invalid status
+.IP "20"
+Cannot lock free temporary Container for caching
+.IP "22"
+Container or OS template cache is not up to date
+.SS Template errors
+.IP "23"
+Template is not cached
+.IP "24"
+Template was not found
+.IP "25"
+Broken/invalid template
+.IP "26"
+This template is not installed in the Container
+.IP "27"
+This template is already installed in the Container
+.IP "28"
+This template is not available on the Node
+.IP "29"
+Template cache already exists
+.IP "30"
+Configuration file for the template cache was not found
+.IP "31"
+init executable for creating cache was not found
+.IP "32"
+Base OS template has extra O templates
+.IP "65"
+Base OS template has application templates
+.IP "33"
+This RPM is not EZ template
+.IP "34"
+This RPM is not standard template
+.IP "57"
+Unknown OS template architecture
+.IP "58"
+Unsupported OS template architecture
+.IP "68"
+Template area resides on shared partition
+.SS Argument errors
+.IP "35"
+Bad argument
+.IP "36"
+LOCKDIR variable is not defined in global configuration file
+.IP "37"
+TEMPLATE variable is not defined in global configuration file
+.IP "38"
+VE_ROOT variable is not defined in global and Container configuration files
+.IP "39"
+VE_PRIVATE variable is not defined in global and Container configuration files
+.IP "40"
+OSTEMPLATE variable is not defined in Container configuration file
+.IP "41"
+Cannot change the value of $VEID variable to the value in VE_ROOT or VE_PRIVATE
+.IP "42"
+Cannot get VEFORMAT from Container private area VERSION link
+.IP "43"
+This VEFORMAT is not supported by kernel
+.IP "44"
+Unknown VEFORMAT in VERSION link in Container private area
+.IP "45"
+Unknown package management name
+.IP "46"
+Bad Container name
+.IP "47"
+Unknown technologies
+.IP "48"
+Unsupported technologies
+.IP "49"
+Cannot find environment directory
+.IP "50"
+Broken environment directory
+.IP "51"
+Cannot find temporary directory
+.IP "59"
+Cannot get Container layout version
+.IP "60"
+Unknown Container layout
+.SH ENVIRONMENT VARIABLES
+vzpkg uses http_proxy, ftp_proxy, or https_proxy environment variable. 
+.SH EXAMPLES
+To install the OS template fedora-core-12-x86 from the \fBvzup2date\fR repository:
+.br
+\f(CR	vzpkg install template fedora-core-12-x86
+\fR
+.P
+To create a cache of the OS template fedora-core-12-x86_64:
+.br
+\f(CR	vzpkg create cache fedora-core-12-x86_64
+\fR
+.P
+To create a Container on the basis of the fedora-core-12-x86 OS template and start this Container:
+.br
+\f(CR	vzctl create 1000 --ostemplate fedora-core-12-x86
+.br
+\f(CR	vzctl start 1000
+\fR
+.P
+To install mysql and php application EZ templates into Container 1000:
+.br
+\f(CR	vzpkg install 1000 mysql php
+\fR
+.P
+To update the OS template and all related application EZ templates in Container 1000 from the local yum cache:
+.br
+\f(CR	vzpkg update -C 1000
+\fR
+.P
+To install emacs packages into Container 1000:
+.br
+\f(CR	vzpkg install -p 1000 emacs
+\fR
+.P
+To show yum groups for centos-5-x86 OS template:
+.br
+\f(CR	vzpkg list -g centos-5-x86
+\fR
+.P
+To install Administration Tools yum group into Container 1000:
+.br
+\f(CR	vzpkg install -g 1000 "Administration Tools"
+\fR
+.P
+To get the list of packages for the fedora-core-12-x86 OS and mysql application EZ 
+templates:
+.br
+\f(CR	vzpkg info fedora-core-12-x86 packages
+.br
+\f(CR	vzpkg info -F fedora-core-12-x86 mysql packages
+\fR
+.P
+To get the status of Container 1000:
+.br
+\f(CR	vzpkg status -q 1000
+\fR
+.P
+To upgrade Container 1000 based on fedora-core-11-x86 to use fedora-core-12-x86:
+.br
+\f(CR	vzpkg upgrade 1000
+\fR
+.P
+To download and prepare all packages for the fedora-core-12-x86 OS template 
+and related application templates:
+.br
+\f(CR	vzpkg fetch fedora-core-12-x86
+.br
+\fR
+.P
+To remove the OS template fedora-core-12-x86 from the Node:
+.br
+\f(CR	vzpkg remove template fedora-core-12-x86
+\fR
+.SH FILES
+.ad l
+\f(CR/etc/vz/vz.conf,
+.br
+/etc/vztt/vztt.conf,
+.br
+/etc/vztt/url.map,
+.br
+/var/log/vztt.log.\fR
+.SH SEE ALSO
+.BR vzctl (8),
+.BR vzup2date (8),
+.BR vzup2date.conf (5),
+.BR vzmktmpl (8).
+.SH COPYRIGHT
+Copyright (c) 2006-@LAST_COPYRIGHT_YEAR@, @COPYRIGHT_OWNER@. All rights reserved.

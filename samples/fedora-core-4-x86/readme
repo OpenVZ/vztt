@@ -1,0 +1,7 @@
+# to create OS temlate:
+vzmktmpl --post-install post-install --pre-cache pre-cache --post-cache post-cache metafile
+
+
+# to create 'minimal' OS temlate:
+vzmktmpl metafile.minimal
+
