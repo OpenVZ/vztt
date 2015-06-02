@@ -271,13 +271,15 @@ int get_unpack_cmd(char *cmd, int size,
 			const char *file, const char *where, const char *opts);
 
 /*
-generate cmd command for pack 'what' to 'file' with 'archive' type(lzrw or gz)
+generate cmd command for pack 'what' to 'file' with 'archive' type (gz, lzrw
+or lz4)
 */
 int tar_pack(char *cmd, int size, unsigned long archive,
 			const char *file, const char *what, const char *opts);
 
 /*
-generate cmd command for unpack 'file' to 'where' with 'archive' type (lzrw or gz)
+generate cmd command for unpack 'file' to 'where' with 'archive' type (gz,
+lzrw or lz4)
 */
 int tar_unpack(char *cmd, int size, unsigned long archive,
 			const char *file, const char *where, const char *opts);
