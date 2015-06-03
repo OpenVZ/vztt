@@ -3,7 +3,7 @@
   Copyright (c) 2009 by Parallels
 
 
-  This document describes OpenSuSE Linux 11.2 EZ OS Template for @PRODUCT_NAME_LONG@.
+  This document describes OpenSuSE Linux 11.2 EZ OS Template for OpenVZ.
   ______________________________________________________________________
 
   Table of Contents
@@ -32,7 +32,7 @@
 
   2.  Copyright information
 
-  @PRODUCT_NAME_LONG@ is the product of Parallels,
+  OpenVZ is the product of Parallels,
   http://sp.parallels.com/
 
   OpenSuSE Linux 11.2 is the product of Novell. Inc., http://www.novell.com/

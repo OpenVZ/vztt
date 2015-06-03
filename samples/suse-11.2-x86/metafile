@@ -168,4 +168,4 @@ http://download.opensuse.org/distribution/11.2/repo/non-oss/suse/
 http://download.opensuse.org/update/11.2/
 
 %description
-OpenSuSE Linux 11.2 packaged as a @PRODUCT_NAME_LONG@ EZ Template.
+OpenSuSE Linux 11.2 packaged as a OpenVZ EZ Template.

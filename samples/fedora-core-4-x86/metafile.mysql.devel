@@ -26,4 +26,4 @@ SWsoft
 mysql-devel
 
 %description
-MySQL Devel for Fedora Core 4 packaged as a @PRODUCT_NAME_LONG@ template.
+MySQL Devel for Fedora Core 4 packaged as a OpenVZ template.

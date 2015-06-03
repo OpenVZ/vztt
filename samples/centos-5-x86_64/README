@@ -4,7 +4,7 @@
 
 
   This document describes CentOS 5 (for AMD64/Intel EM64T)
-  EZ OS Template for @PRODUCT_NAME_LONG@ and HSPcomplete.
+  EZ OS Template for OpenVZ and HSPcomplete.
   ______________________________________________________________________
 
   Table of Contents
@@ -38,7 +38,7 @@
 
   2.  Copyright information
 
-  @PRODUCT_NAME_LONG@ is the product of Parallels,
+  OpenVZ is the product of Parallels,
   http://sp.parallels.com/
 
   CentOS 5 (for AMD64/Intel EM64T) is a product of cAos Foundation, http://www.centos.org/

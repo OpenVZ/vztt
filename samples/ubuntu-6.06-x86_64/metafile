@@ -277,4 +277,4 @@ http://archive.ubuntu.com/ubuntu dapper-security main restricted universe
 5.10
 
 %description
-Ubuntu GNU/Linux 6.06 x86_64 packaged as a @PRODUCT_NAME_LONG@ EZ Template.
+Ubuntu GNU/Linux 6.06 x86_64 packaged as a OpenVZ EZ Template.

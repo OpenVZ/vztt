@@ -141,4 +141,4 @@ $CE_SERVER/centos/5/updates/x86_64
 4
 
 %description
-CentOS 5 (for AMD64/Intel EM64T) packaged as a @PRODUCT_NAME_LONG@ EZ Template.
+CentOS 5 (for AMD64/Intel EM64T) packaged as a OpenVZ EZ Template.

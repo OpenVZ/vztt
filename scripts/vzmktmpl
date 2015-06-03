@@ -26,7 +26,7 @@ function usage()
 	cat 1>&2 << EOF
 Usage:
 	$PROGNAME [OPTION]... CONFFILE
-Create a @PRODUCT_NAME_LONG@ template using information from CONFFILE
+Create a OpenVZ template using information from CONFFILE
 
 Options are:
   --ct2vm name          add ct2vm script
@@ -407,18 +407,18 @@ DESCRIPTION=`metaconf_section description $config`
 if [ -z "$DESCRIPTION" ] ; then
 	[ "$SETNAME" ] && addname="-$SETNAME"
 	if [ -z "$APPNAME" ] ; then
-		DESCRIPTION="$OSNAME-$OSVER-${OSARCH}${addname} @PRODUCT_NAME_LONG@ ostemplate"
+		DESCRIPTION="$OSNAME-$OSVER-${OSARCH}${addname} OpenVZ ostemplate"
 	else
-		DESCRIPTION="${APPNAME}${addname} for $OSNAME-$OSVER-$OSARCH @PRODUCT_NAME_LONG@ template"
+		DESCRIPTION="${APPNAME}${addname} for $OSNAME-$OSVER-$OSARCH OpenVZ template"
 	fi
 fi
 NAME=`metaconf_section summary $config`
 if [ -z "$NAME" ] ; then
 	[ "$SETNAME" ] && addname="-$SETNAME"
 	if [ -z "$APPNAME" ] ; then
-		NAME="$OSNAME-$OSVER-${OSARCH}${addname} @PRODUCT_NAME_LONG@ ostemplate"
+		NAME="$OSNAME-$OSVER-${OSARCH}${addname} OpenVZ ostemplate"
 	else
-		NAME="${APPNAME}${addname} for $OSNAME-$OSVER-$OSARCH @PRODUCT_NAME_LONG@ template"
+		NAME="${APPNAME}${addname} for $OSNAME-$OSVER-$OSARCH OpenVZ template"
 	fi
 fi
 CHANGELOG=`metaconf_section changelog $config`
@@ -565,7 +565,7 @@ Release:    $RELEASE
 Summary:    $NAME
 License:    $LICENSE
 Vendor:     %{vendor}
-Group:      @PRODUCT_NAME_LONG@/Templates
+Group:      OpenVZ/Templates
 URL:        %{url}
 Source:		${basename}.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}

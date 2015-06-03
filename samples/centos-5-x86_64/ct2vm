@@ -76,7 +76,7 @@ for i in $VE_ROOT/boot/vmlinuz-*; do
     vzctl exec $CT_ID "/sbin/mkinitrd --with=mptspi /boot/initrd-$KERN_VERSION.img $KERN_VERSION" >/dev/null 2>&1
 
 echo "
-title @PRODUCT_NAME_LONG@ ($KERN_VERSION)
+title OpenVZ ($KERN_VERSION)
 	root (hd0,0)
 	kernel /boot/vmlinuz-$KERN_VERSION ro root=/dev/sda1
 	initrd /boot/initrd-$KERN_VERSION.img

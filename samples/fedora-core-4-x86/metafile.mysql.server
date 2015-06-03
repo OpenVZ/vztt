@@ -26,4 +26,4 @@ SWsoft
 mysql-server
 
 %description
-MySQL Server for Fedora Core 4 packaged as a @PRODUCT_NAME_LONG@ template.
+MySQL Server for Fedora Core 4 packaged as a OpenVZ template.

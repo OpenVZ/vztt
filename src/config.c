@@ -508,7 +508,7 @@ static int process_fstype_layout(struct global_config *gc, struct options_vztt *
 	return 0;
 }
 
-/* load global @PRODUCT_NAME_LONG@ config parameters */
+/* load global OpenVZ config parameters */
 int global_config_read(struct global_config *gc, struct options_vztt *opts_vztt)
 {
 	int rc;

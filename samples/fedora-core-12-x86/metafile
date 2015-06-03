@@ -127,4 +127,4 @@ http://mirrors.fedoraproject.org/mirrorlist?repo=fedora-12&arch=i386
 http://mirrors.fedoraproject.org/mirrorlist?repo=updates-released-f12&arch=i386
 
 %description
-Fedora 12 packaged as a @PRODUCT_NAME_LONG@ EZ Template.
+Fedora 12 packaged as a OpenVZ EZ Template.

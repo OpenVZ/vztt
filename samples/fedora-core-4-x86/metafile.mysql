@@ -26,4 +26,4 @@ mysql-devel
 mysql-bench
 
 %description
-MySQL for Fedora Core 4 packaged as a @PRODUCT_NAME_LONG@ template.
+MySQL for Fedora Core 4 packaged as a OpenVZ template.

@@ -79,4 +79,4 @@ vzdummy-kernel-fc4
 vzdev
 
 %description
-Fedora Core 4 minimal set packaged as a @PRODUCT_NAME_LONG@ template.
+Fedora Core 4 minimal set packaged as a OpenVZ template.

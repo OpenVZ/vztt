@@ -124,4 +124,4 @@ $FC_SERVER/download/mirrors/fedora-core-4
 $FC_SERVER/download/mirrors/updates-released-fc4
 
 %description
-Fedora Core 4 packaged as a @PRODUCT_NAME_LONG@ template.
+Fedora Core 4 packaged as a OpenVZ template.

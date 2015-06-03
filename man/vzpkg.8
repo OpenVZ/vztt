@@ -1,7 +1,7 @@
 .\" $Id$
-.TH vzpkg 8 "March 2010" "@PRODUCT_NAME_LONG@"
+.TH vzpkg 8 "March 2010" "OpenVZ"
 .SH NAME
-\fBvzpkg\fR \- tool for managing @PRODUCT_NAME_LONG@ templates.
+\fBvzpkg\fR \- tool for managing OpenVZ templates.
 .SH SYNOPSYS
 \fBvzpkg\fR \fBinstall\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR \fIobject\fR [\fIobject\fR ...]
 
@@ -56,7 +56,7 @@
 \fBvzpkg\fR \fBhelp\fR
 
 .SH DESCRIPTION
-@PRODUCT_NAME_LONG@ management tool for handling EZ templates and
+OpenVZ management tool for handling EZ templates and
 standalone RPM/DPKG packages and RPM packages groups.
 .SS Commands
 .TP
@@ -280,7 +280,7 @@ vzctl binary was not found
 .IP "6"
 File already exists
 .IP "7"
-@PRODUCT_NAME_LONG@ license is not loaded, or an invalid class ID is set.
+OpenVZ license is not loaded, or an invalid class ID is set.
 .IP "8"
 Running command exits with non-null code
 .IP "9"
@@ -298,9 +298,9 @@ Cannot parse string
 .IP "52"
 Cannot fetch file
 .IP "54"
-Cannot get @PRODUCT_NAME_LONG@ service status
+Cannot get OpenVZ service status
 .IP "55"
-@PRODUCT_NAME_LONG@ service is not running
+OpenVZ service is not running
 .IP "56"
 Invalid URL
 .IP "61"
@@ -500,4 +500,4 @@ To remove the OS template fedora-core-12-x86 from the Node:
 .BR vzup2date.conf (5),
 .BR vzmktmpl (8).
 .SH COPYRIGHT
-Copyright (c) 2006-@LAST_COPYRIGHT_YEAR@, @COPYRIGHT_OWNER@. All rights reserved.
+Copyright (c) 2001-2015 Parallels IP Holdings GmbH. All rights reserved.

@@ -135,7 +135,7 @@ sendmail-cf
 sendmail-doc
 
 %description
-This is RedHat 9 OS packaged as a @PRODUCT_NAME_LONG@ template.
+This is RedHat 9 OS packaged as a OpenVZ template.
 
 %changelog
 * Mon Dec 29 2003 Kir Kolyshkin <kir@sw.ru> 2.5.1-1.swsoft

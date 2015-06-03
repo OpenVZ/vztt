@@ -26,4 +26,4 @@ mysql-bench
 perl-DBD-MySQL
 
 %description
-MySQL for Fedora 12 packaged as a @PRODUCT_NAME_LONG@ EZ Template.
+MySQL for Fedora 12 packaged as a OpenVZ EZ Template.

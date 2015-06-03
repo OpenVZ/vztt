@@ -3,7 +3,7 @@
   Copyright (c) 2009 by Parallels
 
 
-  This document describes Fedora 12 EZ OS template for @PRODUCT_NAME_LONG@.
+  This document describes Fedora 12 EZ OS template for OpenVZ.
   ______________________________________________________________________
 
   Table of Contents
@@ -28,7 +28,7 @@
 
   2.  Copyright information
 
-  @PRODUCT_NAME_LONG@ is product of Parallels,
+  OpenVZ is product of Parallels,
   http://sp.parallels.com/
 
   Fedora 12 OS is a product of Red Hat, Inc.,
