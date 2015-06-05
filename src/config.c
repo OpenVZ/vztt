@@ -1127,10 +1127,12 @@ static int vztt_config_reader(char *var, char *val, void *data)
 	} else if ((strcmp("APP_TEMPLATE_AUTODETECTION", var) == 0)) {
 		tc->apptmpl_autodetect = (strcasecmp(val, "yes") == 0);
 	} else if ((strcmp("ARCHIVE", var) == 0)) {
-		if (!strncmp(val, "gz", 2))
-			tc->archive = VZT_ARCHIVE_GZ;
-		else if (!strncmp(val, "lzrw", 4))
+		if (!strcmp(val, "lz4"))
+			tc->archive = VZT_ARCHIVE_LZ4;
+		else if (!strcmp(val, "lzrw"))
 			tc->archive = VZT_ARCHIVE_LZRW;
+		else if (!strcmp(val, "gz"))
+			tc->archive = VZT_ARCHIVE_GZ;
 		else
 			vztt_logger(0, 0, \
 				"Bad ARCHIVE in vz config, use default value");
@@ -1197,7 +1199,7 @@ void vztt_config_init(struct vztt_config *tc)
 	tc->metadata_expire = METADATA_EXPIRE_DEF;
 	tc->repair_mirror = NULL;
 	tc->apptmpl_autodetect = 1;
-	tc->archive = VZT_ARCHIVE_GZ;
+	tc->archive = VZT_ARCHIVE_LZ4;
 }
 
 /* read /etc/vztt/vztt.conf & /etc/vztt/url.map */

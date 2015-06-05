@@ -50,17 +50,16 @@
 
 #define TARGZ_SUFFIX		".tar.gz"
 #define TARGZ_SUFFIX_LEN 	strlen(TARGZ_SUFFIX)
-#define FILENAME_LEN_TARGZ(len) NAME_MAX - 1 - len
 
 #define TARLZRW_SUFFIX		".tar.lzrw"
 #define TARLZRW_SUFFIX_LEN	strlen(TARLZRW_SUFFIX)
-#define FILENAME_LEN_TARLZRW(len) NAME_MAX - 1 - len
+
+#define TARLZ4_SUFFIX		".tar.lz4"
+#define TARLZ4_SUFFIX_LEN	strlen(TARLZ4_SUFFIX)
 
 #define PLOOP_SUFFIX		".ploop"
 #define PLOOP_V2_SUFFIX		".ploopv2"
 #define SIMFS_SUFFIX		".plain"
-
-#define FILENAME_LEN(len) NAME_MAX - 1 - TARLZRW_SUFFIX_LEN - len
 
 /* TODO: defined in vzctl/libvzctl.h */
 #undef VZ_DIR
@@ -80,7 +79,7 @@
 #define VZ_TMP_DIR	"/vz/tmp/"
 #define TAR		"tar"
 #define PRL_COMPRESS	"prlcompress"
-#define BASH		"/bin/sh"
+#define LZ4				"lz4"
 #define YUM		"/usr/bin/yum"
 
 #define LIBDIR 		"/usr/lib/"
@@ -112,6 +111,7 @@
 
 #define VZT_ARCHIVE_GZ		1
 #define VZT_ARCHIVE_LZRW	2
+#define VZT_ARCHIVE_LZ4		3
 
 #define VZT_CACHE_TYPE_VZFS	(1 << 0)
 #define VZT_CACHE_TYPE_SIMFS	(1 << 1)

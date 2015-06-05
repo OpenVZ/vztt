@@ -1578,7 +1578,13 @@ int tmpl_get_clean_os_name(char *path)
 	if (path == NULL)
 		return -1;
 
-	if ((p = strstr(path, TARLZRW_SUFFIX)))
+	if ((p = strstr(path, TARLZ4_SUFFIX)))
+	{
+		if (strlen(p) != TARLZ4_SUFFIX_LEN)
+			return -2;
+		*p = '\0';
+	}
+	else if ((p = strstr(path, TARLZRW_SUFFIX)))
 	{
 		if (strlen(p) != TARLZRW_SUFFIX_LEN)
 			return -2;
@@ -1607,9 +1613,10 @@ int tmpl_get_cache_tar_name(char *path, int size,
 				unsigned long archive, unsigned long cache_type,
 					const char *tmpldir, const char *osname)
 {
-	int rc;
 	char *storage_suffix = "";
 	char *fstype_suffix = "";
+	char *archive_suffix = "";
+	int n;
 
 	if (cache_type & VZT_CACHE_TYPE_PLOOP_V2)
 		storage_suffix = PLOOP_V2_SUFFIX;
@@ -1619,30 +1626,40 @@ int tmpl_get_cache_tar_name(char *path, int size,
 	if (cache_type & VZT_CACHE_TYPE_SIMFS)
 		fstype_suffix = SIMFS_SUFFIX;
 
-	if (archive == VZT_ARCHIVE_GZ)
-		rc = snprintf((path), (size), "%s/cache/%s%s%s" TARGZ_SUFFIX,
-					(tmpldir), (osname), fstype_suffix, storage_suffix);
-	else
-		rc = snprintf((path), (size), "%s/cache/%s%s%s" TARLZRW_SUFFIX,
-					(tmpldir), (osname), fstype_suffix, storage_suffix);
+	switch (archive) {
+	case VZT_ARCHIVE_LZ4:
+	default:
+		archive_suffix = TARLZ4_SUFFIX;
+		break;
+	case VZT_ARCHIVE_GZ:
+		archive_suffix = TARGZ_SUFFIX;
+		break;
+	case VZT_ARCHIVE_LZRW:
+		archive_suffix = TARLZRW_SUFFIX;
+		break;
+	}
 
-	return rc;
+	n = snprintf((path), (size), "%s/cache/%s%s%s%s",
+		(tmpldir), (osname), fstype_suffix, storage_suffix, archive_suffix);
+
+	return (n > 0 && n < size) ? 0 : -1;
 }
 
 
 int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
 						const char *tmpldir, const char *osname)
 {
+	const int ARCHIVES[] = {VZT_ARCHIVE_LZ4, VZT_ARCHIVE_LZRW, VZT_ARCHIVE_GZ};
+	const int ARCHIVES_COUNT = sizeof(ARCHIVES) / sizeof(ARCHIVES[0]);
+	int i;
 	struct stat st;
-	if (tmpl_get_cache_tar_name(path, size, VZT_ARCHIVE_LZRW, cache_type, tmpldir, osname) <= 0)
-		return -2;
-	if (stat(path, &st) == 0)
-		return 0;
 
-	if (tmpl_get_cache_tar_name(path, size, VZT_ARCHIVE_GZ, cache_type, tmpldir, osname) <= 0)
-		return -2;
-	if (stat(path, &st) == 0)
-		return 0;
+	for (i = 0; i < ARCHIVES_COUNT; ++i) {
+		if (tmpl_get_cache_tar_name(path, size, ARCHIVES[i], cache_type, tmpldir, osname) == -1)
+			return -2;
+		if (stat(path, &st) == 0)
+			return 0;
+	}
 
 	return -1;
 }
@@ -1777,10 +1794,12 @@ int get_pack_cmd(char *cmd, int size, const char *file, const char *what, const 
 {
 	unsigned long archive = 0;
 	char *suffix;
-	if ((suffix = strstr(file, TARGZ_SUFFIX)) && (strlen(suffix) == TARGZ_SUFFIX_LEN))
-		archive = VZT_ARCHIVE_GZ;
+	if ((suffix = strstr(file, TARLZ4_SUFFIX)) && (strlen(suffix) == TARLZ4_SUFFIX_LEN))
+		archive = VZT_ARCHIVE_LZ4;
 	else if ((suffix = strstr(file, TARLZRW_SUFFIX)) && (strlen(suffix) == TARLZRW_SUFFIX_LEN))
 		archive = VZT_ARCHIVE_LZRW;
+	else if ((suffix = strstr(file, TARGZ_SUFFIX)) && (strlen(suffix) == TARGZ_SUFFIX_LEN))
+		archive = VZT_ARCHIVE_GZ;
 	else
 		return -1;
 
@@ -1791,10 +1810,12 @@ int get_unpack_cmd(char *cmd, int size, const char *file, const char *where, con
 {
 	unsigned long archive = 0;
 	char *suffix;
-	if ((suffix = strstr(file, TARGZ_SUFFIX)) && (strlen(suffix) == TARGZ_SUFFIX_LEN))
-		archive = VZT_ARCHIVE_GZ;
+	if ((suffix = strstr(file, TARLZ4_SUFFIX)) && (strlen(suffix) == TARLZ4_SUFFIX_LEN))
+		archive = VZT_ARCHIVE_LZ4;
 	else if ((suffix = strstr(file, TARLZRW_SUFFIX)) && (strlen(suffix) == TARLZRW_SUFFIX_LEN))
 		archive = VZT_ARCHIVE_LZRW;
+	else if ((suffix = strstr(file, TARGZ_SUFFIX)) && (strlen(suffix) == TARGZ_SUFFIX_LEN))
+		archive = VZT_ARCHIVE_GZ;
 	else
 		return -1;
 
@@ -1805,14 +1826,21 @@ int tar_pack(char *cmd, int size, unsigned long archive,
 			const char *file, const char *what, const char *opts)
 {
 	int rc;
-	if (archive == VZT_ARCHIVE_GZ)
-		rc = snprintf(cmd, size, TAR " -z -c %s -f %s %s", opts, file, what);
-	else
-		rc = snprintf(cmd, size,
-				BASH " -c \"" TAR " -c %s -O %s | " PRL_COMPRESS " -p > %s" "\"" ,
-				opts, what, file);
 
-	//printf("TAR PACK: %s\n", cmd);
+	switch (archive) {
+	case VZT_ARCHIVE_LZ4:
+	default:
+		rc = snprintf(cmd, size, TAR " -c %s -O %s | " LZ4 " -z > %s",
+			opts, what, file);
+		break;
+	case VZT_ARCHIVE_LZRW:
+		rc = snprintf(cmd, size, TAR " -c %s -O %s | " PRL_COMPRESS " -p > %s",
+			opts, what, file);
+		break;
+	case VZT_ARCHIVE_GZ:
+		rc = snprintf(cmd, size, TAR " -z -c %s -f %s %s", opts, file, what);
+		break;
+	}
 
 	return rc;
 }
@@ -1821,14 +1849,21 @@ int tar_unpack(char *cmd, int size, unsigned long archive,
 			const char *file, const char *where, const char *opts)
 {
 	int rc;
-	if (archive == VZT_ARCHIVE_GZ)
-		rc = snprintf(cmd, size, TAR " -z -x %s -f %s -C %s", opts, file, where);
-	else
-		rc = snprintf(cmd, size,
-				BASH " -c \"" PRL_COMPRESS " -u <  %s | " TAR " -x -C %s %s " "\"" ,
-				file, where, opts);
 
-	//printf("TAR UNPACK: %s\n", cmd);
+	switch (archive) {
+	case VZT_ARCHIVE_LZ4:
+	default:
+		rc = snprintf(cmd, size, LZ4 " -d < %s | " TAR " -x -C %s %s",
+			file, where, opts);
+		break;
+	case VZT_ARCHIVE_LZRW:
+		rc = snprintf(cmd, size, PRL_COMPRESS " -u <  %s | " TAR " -x -C %s %s ",
+			file, where, opts);
+		break;
+	case VZT_ARCHIVE_GZ:
+		rc = snprintf(cmd, size, TAR " -z -x %s -f %s -C %s", opts, file, where);
+		break;
+	}
 
 	return rc;
 }
