@@ -413,6 +413,23 @@ int load_base_os_tmpl(unsigned long fld_mask, struct base_os_tmpl *tmpl)
 		return VZT_TMPL_BROKEN;
 	}
 
+	/* Backward compatibility for 32-bit templates and pkgmans */
+	if ((cache_type = strstr(tmpl->package_manager, "x86")))
+	{
+		cache_type[1] = '6';
+		cache_type[2] = '4';
+	}
+	else if ((cache_type = strstr(tmpl->package_manager, "x64")) == 0)
+	{
+		cache_type = malloc(strlen(tmpl->package_manager) + 4);
+		if (cache_type == NULL)
+			return VZT_CANT_ALLOC_MEM;
+		snprintf(cache_type, strlen(tmpl->package_manager) + 4,
+			"%sx64", tmpl->package_manager);
+		free((void *)tmpl->package_manager);
+		tmpl->package_manager = cache_type;
+	}
+
 	if (fld_mask & VZTT_INFO_OSRELEASE) {
 		snprintf(path, sizeof(path), "%s/osrelease", tmpl->confdir);
 		read_string(path, &tmpl->osrelease);
