@@ -413,6 +413,7 @@ int load_base_os_tmpl(unsigned long fld_mask, struct base_os_tmpl *tmpl)
 		return VZT_TMPL_BROKEN;
 	}
 
+#if 0 // Temporary disabled due to incompatibility of rpms libdb
 	/* Backward compatibility for 32-bit templates and pkgmans */
 	if ((cache_type = strstr(tmpl->package_manager, "x86")))
 	{
@@ -429,6 +430,7 @@ int load_base_os_tmpl(unsigned long fld_mask, struct base_os_tmpl *tmpl)
 		free((void *)tmpl->package_manager);
 		tmpl->package_manager = cache_type;
 	}
+#endif
 
 	if (fld_mask & VZTT_INFO_OSRELEASE) {
 		snprintf(path, sizeof(path), "%s/osrelease", tmpl->confdir);
