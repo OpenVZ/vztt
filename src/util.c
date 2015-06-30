@@ -328,6 +328,7 @@ int call_VE_script(
 	int progress_fd)
 {
 	char buf[PATH_MAX];
+	char tmp_dir[PATH_MAX];
 	char tmp_file[PATH_MAX];
 	char progress_stage[PATH_MAX];
 	char *env = NULL;
@@ -346,20 +347,25 @@ int call_VE_script(
 		script_name ? script_name : script);
 	progress(progress_stage, 0, progress_fd);
 
+	/* Create temp dir */
+	snprintf(tmp_dir, sizeof(tmp_dir), "%s/root/vzttXXXXXX", ve_root);
+	if (mkdtemp(tmp_dir) == NULL) {
+		vztt_logger(0, errno, "mkdtemp(%s) error", tmp_dir);
+		return VZT_CANT_CREATE;
+	}
+
 	/* Create temp file */
-	snprintf(tmp_file, sizeof(tmp_file), "%s/tmp/scriptXXXXXX", ve_root);
-	if ((dst = mkstemp(tmp_file)) == -1) {
-		vztt_logger(0, errno, "mkstemp(%s) error", tmp_file);
+	snprintf(tmp_file, sizeof(tmp_file), "%s/script", tmp_dir);
+	if ((dst = open(tmp_file, O_WRONLY|O_CREAT|O_TRUNC, 0700)) == -1) {
+		vztt_logger(0, errno, "open(%s) error", tmp_file);
 		return VZT_CANT_CREATE;
 	}
 	if ((rc = copy_file_fd(dst, tmp_file, script))) {
 		close(dst);
-		unlink(tmp_file);
+		remove_directory(tmp_dir);
 		return rc;
 	}
 	close(dst);
-
-        chmod(tmp_file, 0700);
 
 	// Prepare the environment
 	if (environment && !string_list_empty(environment)) {
@@ -390,7 +396,7 @@ int call_VE_script(
 		rc = VZT_CANT_EXEC;
 		goto cleanup;
 	}
-	unlink(tmp_file);
+	remove_directory(tmp_dir);
 cleanup:
 	VZTT_FREE_STR(vzctl_env);
 	VZTT_FREE_STR(env);
