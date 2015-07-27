@@ -810,9 +810,6 @@ int get_veid(const char *str, ctid_t ctid)
 	if (str == NULL)
 		return -1;
 
-	if (vzctl2_parse_ctid(str, ctid) == 0)
-		return 0;
-
 	/* convert to utf-8 */
 	if (vzctl2_convertstr(str, ustr, sizeof(ustr))) {
 		vztt_logger(0, 0, "Can't convert CT name to UTF-8: %s", str);
@@ -836,9 +833,6 @@ int is_veid(const char *str, ctid_t ctid)
 
 	if (strlen(str) == 0)
 		return 0;
-
-	if (vzctl2_parse_ctid(str, ctid) == 0)
-		return 1;
 
 	/* convert to utf-8 */
 	rc = 0;
