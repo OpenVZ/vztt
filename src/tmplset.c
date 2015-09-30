@@ -1053,7 +1053,7 @@ int tmplset_get_urls(
 		/* always add base OS template repos ignoring marker
 		except for "separate repo" mode (used for update metadata) */
 		if (!(t->mode & TMPLSET_SEPARATE_REPO_MODE) ||
-				t->base->marker) {
+				t->base->marker || t->os != (struct os_tmpl *) t->base) {
 			copy_url(repositories, &t->base->repositories);
 			copy_url(zypp_repositories, &t->base->zypp_repositories);
 			copy_url(mirrorlist, &t->base->mirrorlist);

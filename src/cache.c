@@ -207,10 +207,20 @@ static int create_cache(
 	progress(PROGRESS_CREATE_TEMP_CONTAINER, 0, opts_vztt->progress_fd);
 
 	tmplset_mark(tmpl, NULL, TMPLSET_MARK_OS, NULL);
-	if ((rc = string_list_copy(&packages0, &tmpl->os->packages0)))
-		goto cleanup_unlock_cache;
-	if ((rc = string_list_copy(&packages1, &tmpl->os->packages1)))
-		goto cleanup_unlock_cache;
+	if (string_list_empty(&tmpl->os->packages0)) {
+		if ((rc = string_list_copy(&packages0, &tmpl->base->packages0)))
+			goto cleanup_unlock_cache;
+	} else {
+		if ((rc = string_list_copy(&packages0, &tmpl->os->packages0)))
+			goto cleanup_unlock_cache;
+	}
+	if (string_list_empty(&tmpl->os->packages1)) {
+		if ((rc = string_list_copy(&packages1, &tmpl->base->packages1)))
+			goto cleanup_unlock_cache;
+	} else {
+		if ((rc = string_list_copy(&packages1, &tmpl->os->packages1)))
+			goto cleanup_unlock_cache;
+	}
 	if ((rc = string_list_copy(&packages, &tmpl->os->packages)))
 		goto cleanup_unlock_cache;
 
