@@ -842,7 +842,7 @@ int update_cache(
 		fclose(fp);
 
 		vztt_logger(1, 0, "Unpacking ploop %s", cachename);
-		get_unpack_cmd(cmd, sizeof(cmd), cachename, ploop_dir, "--fast-links");
+		get_unpack_cmd(cmd, sizeof(cmd), cachename, ploop_dir, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_3;
 
@@ -897,7 +897,7 @@ int update_cache(
 			goto cleanup_3;
 	} else {
 		vztt_logger(1, 0, "Unpacking %s", cachename);
-		get_unpack_cmd(cmd, sizeof(cmd), cachename, ve_private, "--fast-links");
+		get_unpack_cmd(cmd, sizeof(cmd), cachename, ve_private, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_3;
 	}

@@ -630,7 +630,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 		fclose(fp);
 
 		vztt_logger(1, 0, "Unpacking ploop %s", base_cachename);
-		get_unpack_cmd(cmd, sizeof(cmd), base_cachename, ploop_dir, "--fast-links");
+		get_unpack_cmd(cmd, sizeof(cmd), base_cachename, ploop_dir, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_4;
 
@@ -689,7 +689,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 			goto cleanup_5;
 	} else {
 		vztt_logger(1, 0, "Unpacking %s", base_cachename);
-		get_unpack_cmd(cmd, sizeof(cmd), base_cachename, ve_private, "--fast-links");
+		get_unpack_cmd(cmd, sizeof(cmd), base_cachename, ve_private, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_4;
 	}
@@ -1106,7 +1106,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 		fclose(fp);
 
 		vztt_logger(1, 0, "Unpacking ploop %s", cachename);
-		get_unpack_cmd(cmd, sizeof(cmd), cachename, ploop_dir, "--fast-links");
+		get_unpack_cmd(cmd, sizeof(cmd), cachename, ploop_dir, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_4;
 
@@ -1165,7 +1165,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 			goto cleanup_5;
 	} else {
 		vztt_logger(1, 0, "Unpacking %s", cachename);
-		get_unpack_cmd(cmd, sizeof(cmd), cachename, ve_private, "--fast-links");
+		get_unpack_cmd(cmd, sizeof(cmd), cachename, ve_private, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_4;
 	}
