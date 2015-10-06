@@ -84,7 +84,7 @@ static int open_ploop_di(char *ploop_dir, struct ploop_disk_images_data **di)
 	snprintf(path, sizeof(path), "%s/"DESCRIPTOR_NAME,
 			ploop_dir);
 
-	if ((rc = ploop_read_disk_descr(di, path)))
+	if ((rc = ploop_open_dd(di, path)))
 	{
 		vztt_logger(0, 0, "Failed to read ploop disk descriptor %s: %s %i",
 			ploop_dir, ploop_get_last_error(), rc);
@@ -195,7 +195,7 @@ err:
 				old_cache);
 	else
 		vztt_logger(1, 0, "Done.", old_cache, cache);
-	ploop_free_diskdescriptor(di);
+	ploop_close_dd(di);
 
 	return rc;
 }
@@ -294,7 +294,7 @@ int mount_ploop(char *ploop_dir, char *to, struct options_vztt *opts_vztt)
 	putenv("PLOOP_SKIP_EXT4_EXTENTS_CHECK");
 
 cleanup_0:
-	ploop_free_diskdescriptor(di);
+	ploop_close_dd(di);
 
 	return rc;
 }
@@ -316,7 +316,7 @@ int umount_ploop(char *ploop_dir, struct options_vztt *opts_vztt)
 	}
 
 cleanup_0:
-	ploop_free_diskdescriptor(di);
+	ploop_close_dd(di);
 
 	return rc;
 }
@@ -370,7 +370,7 @@ int resize_ploop(char *ploop_dir, struct options_vztt *opts_vztt, unsigned long 
 	}
 
 cleanup_0:
-	ploop_free_diskdescriptor(di);
+	ploop_close_dd(di);
 	progress(PROGRESS_RESIZE_PLOOP, 100, opts_vztt->progress_fd);
 
 	return rc;
