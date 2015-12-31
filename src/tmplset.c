@@ -577,6 +577,7 @@ int tmplset_install(
 {
 	int i, rc;
 	char cmd[PATH_MAX+1];
+	char cmd_noarch[PATH_MAX+1];
 	char path[PATH_MAX+1];
 	char tmpl_string[PATH_MAX+1];
 	char *tmpl_string_p = tmpl_string;
@@ -587,21 +588,24 @@ int tmplset_install(
 	if (t) {
 		string_list_for_each(tmpls, p) {
 			i = snprintf(tmpl_string_p, sizeof(tmpl_string), \
-			    " %s-%s-%s-%s-ez", p->s, t->base->osname, \
+			    " %s-%s-%s-%s", p->s, t->base->osname, \
 			     t->base->osver, t->base->osarch);
 			tmpl_string_p += i;
 		}
 	} else {
 		snprintf(tmpl_string, sizeof(tmpl_string), \
-		    " %s-ez", *ostemplate == '.' ? ostemplate+1 : ostemplate);
+		    " %s", *ostemplate == '.' ? ostemplate+1 : ostemplate);
 	}
 
-	snprintf(cmd, sizeof(cmd),  YUM " install -y %s", \
+	snprintf(cmd, sizeof(cmd),  YUM " install -y %s-ez", \
+	    tmpl_string);
+	snprintf(cmd_noarch, sizeof(cmd),  YUM " install -y %s-x86_64-ez", \
 	    tmpl_string);
 	vztt_logger(1, 0, "Some template(s)%s is not found, " \
 	    "running " YUM " to install it...", tmpl_string);
 
-	if ((rc = exec_cmd(cmd, (flags & OPT_VZTT_QUIET))))
+	if ((rc = exec_cmd(cmd, (flags & OPT_VZTT_QUIET))) && \
+		(rc = exec_cmd(cmd_noarch, (flags & OPT_VZTT_QUIET))))
 	{
 		vztt_logger(0, 0, "Failed to install the template(s):%s",
 			tmpl_string);
