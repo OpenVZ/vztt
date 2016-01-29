@@ -463,9 +463,6 @@ static int apt_create_config(struct AptTransaction *apt)
 	struct vztt_config tc;
 	struct options_vztt *opts_vztt;
 
-	if ((rc = apt_create_sources(apt)))
-		return rc;
-
 	opts_vztt = vztt_options_create();
 	opts_vztt->flags |= OPT_VZTT_QUIET;
 	global_config_init(&gc);
@@ -476,6 +473,9 @@ static int apt_create_config(struct AptTransaction *apt)
 
 	if ((rc = vztt_config_read(gc.template_dir, &tc)))
                 return rc;
+
+	if ((rc = apt_create_sources(apt)))
+	        return rc;
 
 	/* create temporary yum confug */
 	snprintf(path, sizeof(path), "%s/apt_conf.XXXXXX", apt->tmpdir);
