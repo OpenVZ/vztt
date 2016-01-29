@@ -1124,6 +1124,8 @@ static int vztt_config_reader(char *var, char *val, void *data)
 			vztt_logger(0, errno, "Can`t alloc memory");
 			return VZT_CANT_ALLOC_MEM;
 		}
+	} else if((strcmp("SKIPI386", var) == 0)) {
+		tc->skipi386 = !is_disabled(val);
 	} else if ((strcmp("APP_TEMPLATE_AUTODETECTION", var) == 0)) {
 		tc->apptmpl_autodetect = (strcasecmp(val, "yes") == 0);
 	} else if ((strcmp("ARCHIVE", var) == 0)) {
@@ -1199,6 +1201,7 @@ void vztt_config_init(struct vztt_config *tc)
 	tc->metadata_expire = METADATA_EXPIRE_DEF;
 	tc->repair_mirror = NULL;
 	tc->apptmpl_autodetect = 1;
+	tc->skipi386 = 0;
 	tc->archive = VZT_ARCHIVE_LZ4;
 }
 

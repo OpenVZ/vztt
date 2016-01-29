@@ -62,6 +62,7 @@ struct vztt_config
 	char *ftp_proxy_password;
 	char *vztt_proxy;
 	char *exclude;
+	unsigned int skipi386;
 	int metadata_expire;
 	char *repair_mirror;
 	int apptmpl_autodetect;

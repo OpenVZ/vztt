@@ -459,9 +459,23 @@ static int apt_create_config(struct AptTransaction *apt)
 	int qlevel = 0;
 	char dflag[10];
 	int rc;
+	struct global_config gc;
+	struct vztt_config tc;
+	struct options_vztt *opts_vztt;
 
 	if ((rc = apt_create_sources(apt)))
 		return rc;
+
+	opts_vztt = vztt_options_create();
+	opts_vztt->flags |= OPT_VZTT_QUIET;
+	global_config_init(&gc);
+	vztt_config_init(&tc);
+
+	if ((rc = global_config_read(&gc, opts_vztt)))
+	        return rc;
+
+	if ((rc = vztt_config_read(gc.template_dir, &tc)))
+                return rc;
 
 	/* create temporary yum confug */
 	snprintf(path, sizeof(path), "%s/apt_conf.XXXXXX", apt->tmpdir);
@@ -516,9 +530,17 @@ static int apt_create_config(struct AptTransaction *apt)
 	/* Options for APT in general */
 	fprintf(fd, "APT\n{\n");
 	if (strcmp(apt->pkgarch, ARCH_AMD64) == 0)
-		fprintf(fd, "  Architectures { \"" ARCH_AMD64 "\"; \"" ARCH_I386 "\" };");
+		if (tc.skipi386 == 0)
+			fprintf(fd, "  Architectures { \"" ARCH_AMD64 "\"; \"" ARCH_I386 "\" };");
+		else
+			fprintf(fd, "  Architectures { \"" ARCH_AMD64 "\" };");
 	else
 		fprintf(fd, "  Architectures { \"" ARCH_I386 "\" };");
+
+	vztt_config_clean(&tc);
+	vztt_options_free(opts_vztt);
+	global_config_clean(&gc);
+
 	fprintf(fd, "  Build-Essential \"build-essential\";\n");
 	/* Options for apt-get */
 	fprintf(fd, "  Get\n  {\n");
