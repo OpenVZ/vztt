@@ -516,9 +516,13 @@ static int apt_create_config(struct AptTransaction *apt)
 	/* Options for APT in general */
 	fprintf(fd, "APT\n{\n");
 	if (strcmp(apt->pkgarch, ARCH_AMD64) == 0)
-		fprintf(fd, "  Architectures { \"" ARCH_AMD64 "\"; \"" ARCH_I386 "\" };");
+		if (apt->tdata->base->multiarch == 1)
+			fprintf(fd, "  Architectures { \"" ARCH_AMD64 "\"; \"" ARCH_I386 "\" };");
+		else
+			fprintf(fd, "  Architectures { \"" ARCH_AMD64 "\" };");
 	else
 		fprintf(fd, "  Architectures { \"" ARCH_I386 "\" };");
+
 	fprintf(fd, "  Build-Essential \"build-essential\";\n");
 	/* Options for apt-get */
 	fprintf(fd, "  Get\n  {\n");
