@@ -169,6 +169,7 @@ int init_base_os_tmpl(
 	tmpl->jquota = NULL;
 	tmpl->cache_type = VZT_CACHE_TYPE_ALL;
 	init_tmpl((struct tmpl *)tmpl);
+	tmpl->multiarch = 1;
 
 	return 0;
 }
@@ -389,7 +390,7 @@ static int known_jquota(char *osname, char *osver, int *jquota)
 int load_base_os_tmpl(unsigned long fld_mask, struct base_os_tmpl *tmpl)
 {
 	char path[PATH_MAX+1];
-	char *cache_type;
+	char *cache_type, *multiarch;
 	int rc;
 	struct string_list technologies;
 	struct string_list_el *p;
@@ -484,6 +485,18 @@ int load_base_os_tmpl(unsigned long fld_mask, struct base_os_tmpl *tmpl)
 			tmpl->technologies += tech;
 		}
 		string_list_clean(&technologies);
+	}
+
+	/* enable multiarch (allow 32bit pkgs on 64bit arch?) */
+	snprintf(path, sizeof(path), "%s/multiarch", tmpl->confdir);
+	if(access(path, F_OK) == 0) {
+		if((rc = read_string(path, &multiarch))) {
+			vztt_logger(0, 0, "Can not read multiarch file " \
+			    "for %s EZ os template", tmpl->name);
+			return VZT_TMPL_BROKEN;
+		}
+		tmpl->multiarch = !is_disabled(multiarch);
+		free(multiarch);
 	}
 
 	/* Cache type. Ignore if unavailable */

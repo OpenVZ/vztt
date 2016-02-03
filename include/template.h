@@ -88,6 +88,7 @@ struct base_os_tmpl {
 	char *osrelease;
 	char *jquota;
 	unsigned long cache_type;
+	unsigned int multiarch;
 };
 
 /* to initialize application template data */
