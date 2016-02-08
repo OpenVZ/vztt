@@ -2,9 +2,9 @@
 CC = gcc
 #MODE = test
 ifeq "${MODE}" "test"
-CFLAGS = -g -Wall -O0
+CFLAGS += -g -Wall -O0
 else
-CFLAGS = -g -Wall -O2
+CFLAGS += -g -Wall -O2
 endif
 override CFLAGS += -fPIC -D_REENTRANT -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE
 LDFLAGS += -L . $(LGCOV)
