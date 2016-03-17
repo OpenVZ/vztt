@@ -26,10 +26,6 @@ LOBJ = options.o queue.o util.o template.o tmplset.o config.o \
 	info.o lock.o metadata.o appcache.o ploop.o zypper.o env_compat.o \
 	list_avail.o
 
-LIB_vztt = libvztt.so.$(LIBVER).$(LIBVER_MINOR)
-LIB_vztt_major = libvztt.so.$(LIBVER)
-
- 
 all: myinit vzpkgchroot libvztt.a vzpkg vztt_pfcache_xattr \
 	libvztt.so $(LIB_vztt) $(LIB_vztt_major)
 
@@ -38,6 +34,9 @@ myinit: init.c
 
 vzpkgchroot: vzpkgchroot.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
+
+LIB_vztt = libvztt.so.$(LIBVER).$(LIBVER_MINOR)
+LIB_vztt_major = libvztt.so.$(LIBVER)
 
 $(LIB_vztt): $(LOBJ)
 	$(CC) $(CFLAGS) $(INC) $(LDFLAGS) -shared -Wl,--as-needed \
