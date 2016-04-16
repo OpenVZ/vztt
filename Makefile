@@ -102,7 +102,7 @@ install-includes: $(VZTT_INCLUDES)
 install-libexec: $(VZTT_LIBEXEC)
 	mkdir -p $(LIBEXECDIR)
 	for f in $(VZTT_LIBEXEC); do \
-		install -m 644 $$f $(LIBEXECDIR); \
+		install -m 755 $$f $(LIBEXECDIR); \
 	done
 
 clean:
