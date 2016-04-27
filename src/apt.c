@@ -1565,7 +1565,7 @@ int apt_run_local(
 		while (fgets(buf, sizeof(buf), fc)) {
 			fputs(buf, fp);
 			/* also intercept Package: & Version: strings */
-			for (ptr = buf + strlen(buf) - 1; *ptr == '\n'; ptr--)
+			for (ptr = buf + strlen(buf) - 1; *ptr == '\n' && ptr >= buf; ptr--)
 				*ptr = '\0';
 			if (strncmp(buf, pstr, strlen(pstr)) == 0) {
 				pkg = strdup(buf + strlen(pstr));
