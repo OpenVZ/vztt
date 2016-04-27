@@ -31,7 +31,7 @@ NOJQUOTA_CONF_FILE = etc/nojquota.conf
 CONF_FILE = etc/vztt.conf
 URL_MAP = etc/url.map
 SAMPLES_DIRS = samples/fedora-core-4-x86 samples/ubuntu-6.06-x86_64 samples/centos-5-x86_64 samples/fedora-core-12-x86 samples/suse-11.2-x86 samples/ubuntu-10.04-x86_64
-VZTT_LIBEXEC = src/vztt_pfcache_xattr
+VZTT_LIBEXEC = src/vztt_pfcache_xattr scripts/ovz-template-converter
 
 #############################
 default: all
