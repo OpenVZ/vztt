@@ -39,6 +39,7 @@
 
 #define VZ_CONFDIR	"/etc/vz/"
 #define VZ_CONFIG	VZ_CONFDIR "vz.conf"
+#define PFCACHE_CONFIG	VZ_CONFDIR "pfcache.conf"
 #define ENV_CONF_DIR	VZ_CONFDIR "conf/"
 #define VE_CONFIG	"ve.conf"
 

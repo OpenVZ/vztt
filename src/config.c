@@ -329,6 +329,37 @@ int save_config(const char *config,
 	return 0;
 }
 
+static int pfcache_config_reader(char *var, char *val, void *data)
+{
+	int rc;
+	char *str, *token, *saveptr;
+	char path[PATH_MAX+1];
+
+	struct global_config *gc = (struct global_config *)data;
+
+	if (strcmp("PFCACHE_INCLUDES", var) != 0)
+		return 0;
+
+	string_list_clean(&gc->csum_white_list);
+
+	/* parse string */
+	for (str = val; ;str = NULL) {
+		if ((token = strtok_r(str, " 	", &saveptr)) == NULL)
+			break;
+		/* skip leading slashes */
+		while (*token == '/')
+			token++;
+		/* remove tailing slashes exception one */
+		while (token[strlen(token)-1] == '/')
+			token[strlen(token)-1] = '\0';
+		snprintf(path, sizeof(path), "%s/", token);
+		if ((rc = string_list_add(&gc->csum_white_list, path)))
+			return rc;
+	}
+
+	return 0;
+}
+
 static int global_config_reader(char *var, char *val, void *data)
 {
 	struct global_config *gc = (struct global_config *)data;
@@ -391,26 +422,9 @@ static int global_config_reader(char *var, char *val, void *data)
 	} else if ((strcmp("GOLDEN_IMAGE", var) == 0)) {
 		if (is_disabled(val))
 			gc->golden_image = 0;
-	} else if ((strcmp("PFCACHE_INCLUDES", var) == 0)) {
-		/* parse string */
-		int rc;
-		char *str, *token, *saveptr;
-		char path[PATH_MAX+1];
-		for (str = val; ;str = NULL) {
-			if ((token = strtok_r(str, " 	", &saveptr)) == NULL)
-				break;
-			/* skip leading slashes */
-			while (*token == '/')
-				token++;
-			/* remove tailing slashes exception one */
-			while (token[strlen(token)-1] == '/')
-				token[strlen(token)-1] = '\0';
-			snprintf(path, sizeof(path), "%s/", token);
-			if ((rc = string_list_add(&gc->csum_white_list, path)))
-				return rc;
-		}
 	}
-	return 0;
+
+	return pfcache_config_reader(var, val, data);
 }
 
 unsigned long get_cache_type(struct global_config *gc)
@@ -514,6 +528,11 @@ int global_config_read(struct global_config *gc, struct options_vztt *opts_vztt)
 	int rc;
 
 	if ((rc = read_config(VZ_CONFIG, global_config_reader, (void *)gc)))
+		 return rc;
+
+	/* Try to read pfcache.conf */
+	if (access(PFCACHE_CONFIG, F_OK) == 0 &&
+		(rc = read_config(PFCACHE_CONFIG, pfcache_config_reader, (void *)gc)))
 		 return rc;
 
 	/* Check layout and vefstype */
