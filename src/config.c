@@ -329,20 +329,12 @@ int save_config(const char *config,
 	return 0;
 }
 
-static int pfcache_config_reader(char *var, char *val, void *data)
+static int pfcache_includes_parser(char *val, struct global_config *gc)
 {
 	int rc;
 	char *str, *token, *saveptr;
 	char path[PATH_MAX+1];
 
-	struct global_config *gc = (struct global_config *)data;
-
-	if (strcmp("PFCACHE_INCLUDES", var) != 0)
-		return 0;
-
-	string_list_clean(&gc->csum_white_list);
-
-	/* parse string */
 	for (str = val; ;str = NULL) {
 		if ((token = strtok_r(str, " 	", &saveptr)) == NULL)
 			break;
@@ -358,6 +350,19 @@ static int pfcache_config_reader(char *var, char *val, void *data)
 	}
 
 	return 0;
+}
+
+static int pfcache_config_reader(char *var, char *val, void *data)
+{
+	struct global_config *gc = (struct global_config *)data;
+
+	if (strcmp("PFCACHE_INCLUDES", var) != 0)
+		return 0;
+
+	string_list_clean(&gc->csum_white_list);
+
+	/* parse string */
+	return pfcache_includes_parser(val, gc);
 }
 
 static int global_config_reader(char *var, char *val, void *data)
@@ -533,6 +538,11 @@ int global_config_read(struct global_config *gc, struct options_vztt *opts_vztt)
 	/* Try to read pfcache.conf */
 	if (access(PFCACHE_CONFIG, F_OK) == 0 &&
 		(rc = read_config(PFCACHE_CONFIG, pfcache_config_reader, (void *)gc)))
+		 return rc;
+
+	/* If PFCACHE_INCLUDES is empty - use predefined values */
+	if (string_list_empty(&gc->csum_white_list) &&
+		(rc = pfcache_includes_parser("bin etc lib lib64 opt sbin usr", gc)))
 		 return rc;
 
 	/* Check layout and vefstype */
