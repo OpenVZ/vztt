@@ -531,23 +531,23 @@ static int process_fstype_layout(struct global_config *gc, struct options_vztt *
 int global_config_read(struct global_config *gc, struct options_vztt *opts_vztt)
 {
 	int rc;
+	char pfcache_includes[] = "bin etc lib lib64 opt sbin usrz";
 
 	if ((rc = read_config(VZ_CONFIG, global_config_reader, (void *)gc)))
-		 return rc;
+		return rc;
 
 	/* Try to read pfcache.conf */
-	if (access(PFCACHE_CONFIG, F_OK) == 0 &&
-		(rc = read_config(PFCACHE_CONFIG, pfcache_config_reader, (void *)gc)))
-		 return rc;
-
+	if (access(PFCACHE_CONFIG, F_OK) == 0) {
+		if ((rc = read_config(PFCACHE_CONFIG, pfcache_config_reader, (void *)gc)))
+			return rc;
 	/* If PFCACHE_INCLUDES is empty - use predefined values */
-	if (string_list_empty(&gc->csum_white_list) &&
-		(rc = pfcache_includes_parser("bin etc lib lib64 opt sbin usr", gc)))
-		 return rc;
+	} else if (string_list_empty(&gc->csum_white_list) &&
+		(rc = pfcache_includes_parser(pfcache_includes, gc)))
+		return rc;
 
 	/* Check layout and vefstype */
 	if ((rc = process_fstype_layout(gc, opts_vztt)))
-		 return rc;
+		return rc;
 
 	/* set default values */
 	if (gc->lockdir == NULL) {
