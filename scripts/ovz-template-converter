@@ -109,9 +109,10 @@ if (os.path.isfile(cachepath)):
     print "Error: Remove this cache file and run the script again"
     sys.exit(73)
 
-defaultconfpath = ''.join([args.templateroot, templateinfo[0], "/", templateinfo[1], "/", templateinfo[2], "/config/os/default"])
+baseconfpath = ''.join([args.templateroot, templateinfo[0], "/", templateinfo[1], "/", templateinfo[2], "/config/os/"])
+defaultconfpath = ''.join([baseconfpath, "default"])
 if (len(templateinfo) == 4):
-    distroconfpath = ''.join([args.templateroot, templateinfo[0], "/", templateinfo[1], "/", templateinfo[2], "/config/os/", templateinfo[3]])
+    distroconfpath = ''.join([baseconfpath, templateinfo[3]])
 else:
     distroconfpath = defaultconfpath
 
