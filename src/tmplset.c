@@ -652,13 +652,13 @@ int check_ovz_cache(
 	snprintf(cache_name, sizeof(cache_name), "%s/cache/%s.tar.gz", \
 		tmpldir, ostemplate);
 
-	vztt_logger(1, 0, "Looking for the precreated template cache: %s ",
+	vztt_logger(1, 0, "Looking for the precreated template cache %s ",
 				cache_name );
 	if (access(cache_name, F_OK) == 0) {
 		snprintf(cmd, sizeof(cmd), OVZ_CONVERT " %s", cache_name);
 
 		if (rc = exec_cmd(cmd, 1)) {
-			vztt_logger(0, 0, "Failed to convert the precreated cache: %s",
+			vztt_logger(0, 0, "Failed to convert the precreated cache %s",
 						cache_name);
 			return rc;
 		}
