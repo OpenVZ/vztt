@@ -1,0 +1,215 @@
+#!/usr/bin/python
+#
+# Copyright (c) 2016 Parallels IP Holdings GmbH
+#
+# This file is part of OpenVZ. OpenVZ is free software;
+# you can redistribute it and/or modify it under the terms of the GNU
+# General Public License as published by the Free Software Foundation;
+# either version 2 of the License, or (at your option) any later
+# version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+# 02110-1301, USA.
+#
+# Our contact details: Parallels IP Holdings GmbH, Vordergasse 59, 8200
+# Schaffhausen, Switzerland.
+#
+# Convert OpenVZ template caches to Virtuozzo 7 templates
+#
+
+import argparse
+import os
+import shutil
+import subprocess
+import sys
+import tempfile
+import configobj
+
+def writeconfig(configfile, configtext, configmode=0644):
+    fp = open(configfile, "w+")
+    fp.write(configtext)
+    fp.close()
+    os.chmod(configfile, configmode)
+
+if (os.geteuid() != 0):
+    print "Error: You need to have root privileges to run this script"
+    sys.exit(73)
+
+# Read configs first
+config = configobj.ConfigObj("/etc/vz/vz.conf")
+defaulttemplate=config.get("TEMPLATE")
+if not defaulttemplate:
+    print "Error: TEMPLATE variable in " + config.filename + " isn't set"
+    sys.exit(37)
+
+vefstype=config.get("VEFSTYPE")
+if not vefstype:
+    print "Error: VEFSTYPE variable in " + config.filename + " isn't set"
+    sys.exit(37)
+
+config = configobj.ConfigObj("/etc/vz/conf/vps.vzpkgtools.conf-sample")
+if config.get("DISKSPACE"):
+    diskspace=config.get("DISKSPACE").split(":")[0]
+else:
+    print "Error: DISKSPACE variable in " + config.filename + " isn't set"
+    sys.exit(30)
+
+# Then parse arguments
+parser = argparse.ArgumentParser(description="Convert OpenVZ templates to Virtuozzo templates")
+parser.add_argument('--verbose', action="store_true",
+                    help="Show details about the results of running the script")
+parser.add_argument('--templateroot', default=defaulttemplate,
+                    help="Virtuozzo templates directory (default: "+defaulttemplate+")")
+parser.add_argument('template',
+                    help="OpenVZ template file to convert")
+args = parser.parse_args()
+
+verbose = args.verbose
+
+if (verbose):
+    kwargs={"stdout":None, "stderr":None}
+else:
+    kwargs={"stdout":open(os.devnull, 'wb'), "stderr":open(os.devnull, 'wb')}
+
+args.templateroot += "/"
+
+if (not os.path.isfile(args.template)):
+    print "Error: Template file", args.template, "doesn't exist"
+    sys.exit(73)
+
+if (not args.template.endswith('.tar.gz')):
+    print "Error: Incorrect template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)"
+    sys.exit(73)
+
+# Extract filename from full path and remove .tar.gz, then parse filename
+templateinfo = os.path.basename(args.template)[:-7].split("-")
+if (not len(templateinfo) in (3, 4)):
+    print "Error: Incorrect template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)"
+    sys.exit(73)
+
+tarname = ''.join([templateinfo[0], "-", templateinfo[1], "-", templateinfo[2]])
+if (len(templateinfo) == 4):
+    tarname += "-" + templateinfo[3]
+tarname += ".plain.ploopv2.tar"
+
+tempdir = tempfile.mkdtemp()
+tarpath = ''.join([tempdir, tarname])
+lz4path = ''.join([tarpath, ".lz4"])
+
+cachepath = ''.join([args.templateroot, "cache/", tarname, ".lz4"])
+if (os.path.isfile(cachepath)):
+    print "Error: Cache file for the selected template already exists:", cachepath
+    print "Error: Remove this cache file and run the script again"
+    sys.exit(73)
+
+baseconfpath = ''.join([args.templateroot, templateinfo[0], "/", templateinfo[1], "/", templateinfo[2], "/config/os/"])
+defaultconfpath = ''.join([baseconfpath, "default"])
+if (len(templateinfo) == 4):
+    distroconfpath = ''.join([baseconfpath, templateinfo[3]])
+else:
+    distroconfpath = defaultconfpath
+
+if (os.path.exists(distroconfpath)):
+    print "Error: Config directory for the selected template already exists:", distroconfpath
+    print "Error: Remove this config directory and run the script again"
+    sys.exit(73)
+
+basedir = tempfile.mkdtemp()
+if (verbose):
+    print "Created", basedir, "as a temporary working directory"
+
+if (vefstype == "simfs"):
+    contentsdir = basedir + "/fs"
+    os.mkdir(contentsdir)
+    os.symlink("4", basedir + "/.ve.layout")
+    if (verbose):
+        print "Extracting the OpenVZ template tarball to", contentsdir
+    try:
+        subprocess.call(["tar", "-xf", args.template, "-C", contentsdir], **kwargs)
+    except:
+        print "Error: Failed to extract the specified OpenVZ template tarball"
+        sys.exit(73)
+else:
+    # Allow to work on ext3 (same as in create_ploop() in vztt/src/ploop.c)
+    os.environ["PLOOP_SKIP_EXT4_EXTENTS_CHECK"] = "yes"
+    # Create cache file structure for selected template
+    roothds = ''.join([basedir, "/root.hds"])
+    try:
+        subprocess.call(["ploop", "init", roothds, "-s", diskspace], **kwargs)
+    except:
+        print "Error: Failed to run ploop init"
+        sys.exit(73)
+    contentsdir = tempfile.mkdtemp()
+
+    if (verbose):
+        print "Created", contentsdir, "as a temporary directory to unpack template contents"
+    diskdescriptor = ''.join([basedir, "/DiskDescriptor.xml"])
+    try:
+        subprocess.call(["ploop", "mount", diskdescriptor, "-m", contentsdir], **kwargs)
+    except:
+        print "Error: Failed to run ploop mount"
+        sys.exit(73)
+
+    if (verbose):
+        print "Extracting the OpenVZ template tarball to", contentsdir
+    try:
+        subprocess.call(["tar", "-xf", args.template, "-C", contentsdir], **kwargs)
+    except:
+        print "Error: Failed to extract the specified OpenVZ template tarball"
+        sys.exit(73)
+    try:
+        subprocess.call(["ploop", "umount", diskdescriptor, "-m", contentsdir], **kwargs)
+    except:
+        print "Error: Failed to run ploop umount"
+        sys.exit(73)
+    os.environ["PLOOP_SKIP_EXT4_EXTENTS_CHECK"] = ""
+
+    shutil.rmtree(contentsdir)
+    if (verbose):
+        print "Deleted the temporary template contents directory", contentsdir
+
+# Compress cache file and make it usable by prlctl
+if (verbose):
+    print "Creating cache file for the selected template"
+try:
+    subprocess.call(["tar", "cvf", tarpath, "-C", basedir, "."], **kwargs)
+except:
+    print "Error: Failed to create cache file tarball"
+    sys.exit(73)
+try:
+    subprocess.call(["lz4", "-1", tarpath, lz4path], **kwargs)
+except:
+    print "Error: Failed to LZ4-compress cache file tarball"
+    sys.exit(73)
+
+os.remove(tarpath)
+if (not os.path.exists(''.join([args.templateroot, "cache/"]))):
+    os.makedirs(''.join([args.templateroot, "cache/"]))
+shutil.move(lz4path, cachepath)
+if (verbose):
+    print "Created cache file for the selected template:", cachepath
+
+shutil.rmtree(basedir)
+if (verbose):
+    print "Deleted the temporary working directory", basedir
+shutil.rmtree(tempdir)
+
+# Create directory tree for selected template and fill it with empty files
+os.makedirs(distroconfpath)
+for infofile in ["mirrorlist", "packages", "no_pkg_actions"]:
+    writeconfig(''.join([distroconfpath, "/", infofile]), '')
+
+# Fill some files with data
+for infofile in ["description", "summary"]:
+    writeconfig(''.join([distroconfpath, "/", infofile]), ''.join([templateinfo[0], " ", templateinfo[1], " (for ", templateinfo[2], ") OpenVZ template"]))
+
+# Make sure we have default config for selected distro template
+if (not os.path.exists(defaultconfpath)):
+    shutil.copytree(distroconfpath, defaultconfpath)

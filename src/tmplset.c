@@ -637,6 +637,45 @@ int tmplset_install(
 }
 
 /*
+ Check if precreated OVZ cache file exists in the cashe directory
+ If found, call external script to convert this cache into Vz7 one
+ and create a dummy config for it
+ */
+int check_ovz_cache(
+		char *tmpldir,
+		char *ostemplate)
+{
+	char cmd[PATH_MAX+1];
+	char cache_name[PATH_MAX+1];
+	int rc;
+
+	snprintf(cache_name, sizeof(cache_name), "%s/cache/%s.tar.gz", \
+		tmpldir, ostemplate);
+
+	vztt_logger(1, 0, "Looking for the precreated template cache %s ",
+				cache_name );
+	if (access(cache_name, F_OK) == 0) {
+		snprintf(cmd, sizeof(cmd), OVZ_CONVERT " %s", cache_name);
+
+		if (rc = exec_cmd(cmd, 1)) {
+			vztt_logger(0, 0, "Failed to convert the precreated cache %s",
+						cache_name);
+			return rc;
+		}
+
+		vztt_logger(0, 0, "The precreated cache %s for the container has been "
+					"found and converted into the VZ7 format.\n"
+					"Note: Such converted containers are not thoroughly "
+					"tested and may have limited functionality. "
+					"You are strongly recommended to use native "
+					"Virtuozzo templates instead.",
+					cache_name);
+	}
+	else
+		return VZT_TMPL_NOT_CACHED;
+}
+
+/*
  read os and application templates names for os template human name <ostemplate>
  and init structures only
 */
@@ -659,14 +698,17 @@ int tmplset_init(
 			&osname, &osver, &osarch, &extraname))) {
 		if ((flags & OPT_VZTT_USE_VZUP2DATE) &&
 			rc == VZT_TMPL_NOT_FOUND) {
-			if ((rc = tmplset_install(0, 0, ostemplate, flags)))
-				return rc;
-			if ((rc = parse_os_name(tmpldir, ostemplate,
-				&osname, &osver, &osarch, &extraname)))
-				return rc;
+			if ((rc = tmplset_install(0, 0, ostemplate, flags))) {
+				if (check_ovz_cache(tmpldir, ostemplate) != 0)
+					return rc;
+			}
 		} else {
-			return rc;
+			if (check_ovz_cache(tmpldir, ostemplate) != 0)
+				return rc;
 		}
+		if ((rc = parse_os_name(tmpldir, ostemplate,
+			&osname, &osver, &osarch, &extraname)))
+			return rc;
 	}
 
 	/* check template architecture */
