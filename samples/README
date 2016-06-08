@@ -1,4 +1,0 @@
-To create redhat-9-x86 template:
-
-cd /usr/share/vztt/samples/redhat-9-x86
-/usr/bin/vzmktmpl --pre-cache pre-cache --post-cache post-cache --post-install post-install metafile

@@ -1,3 +1,0 @@
-#!/bin/bash
-
-vzmktmpl metafile --post-cache post-cache --post-install post-install --pre-cache pre-cache --doc README --post-install-rpm post-install-rpm --pre-upgrade pre-upgrade --ct2vm ct2vm

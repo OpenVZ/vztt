@@ -1,8 +1,0 @@
-#!/bin/bash
-
-pushd / >/dev/null
-
-# Do not launch mingetty on tty devices - they are not accessible from VE
-rm -f etc/event.d/tty*
-
-popd > /dev/null
