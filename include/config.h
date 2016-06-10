@@ -168,7 +168,7 @@ extern unsigned long get_ve_technologies(
 
 /* get list of ve's, use <selector> to select ve */
 int get_ve_list(
-		struct unsigned_list *ls,
+		struct string_list *ls,
 		int selector(const char *ctid, void *data),
 		void *data);
 

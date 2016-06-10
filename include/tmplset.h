@@ -268,12 +268,12 @@ int tmplset_get_ve_list(
 /* get list of ve's, for which OSTEMPLATE is <t->os> */
 int tmplset_get_velist_for_os(
 		struct tmpl_set *t,
-		struct unsigned_list *ls);
+		struct string_list *ls);
 /* get list of ve's, for which <OSTEMPLATE> is base or extra os.
 Otherwise: <OSTEMPLATE> is <t->base> or <OSTEMPLATE> is in <t->oses> list */
 int tmplset_get_velist_for_base(
 		struct tmpl_set *t,
-		struct unsigned_list *ls);
+		struct string_list *ls);
 
 /* get common packages list for marked templates */
 int tmplset_get_marked_pkgs(struct tmpl_set *t, struct string_list *packages);

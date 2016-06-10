@@ -1418,11 +1418,11 @@ unsigned long get_ve_technologies(
 
 /* get list of existing ve */
 int get_ve_list(
-		struct unsigned_list *ls,
+		struct string_list *ls,
 		int selector(const char *ctid, void *data),
 		void *data)
 {
-	int cnt, i;
+	int cnt, i, rc;
 	vzctl_ids_t *ctids;
 
 	if ((ctids = vzctl2_alloc_env_ids()) == NULL) {
@@ -1436,17 +1436,15 @@ int get_ve_list(
 	}
 
 	for (i = 0; i < cnt; i++) {
-/* TODO:
 		if (ctids->ids[i] == 0)
 			continue;
-*/
+
 		if (selector)
 			if (selector(ctids->ids[i], data))
 				continue;
-/* TODO
-		if ((rc = unsigned_list_add(ls, ctids->ids[i])))
+
+		if ((rc = string_list_add(ls, ctids->ids[i])))
 			break;
-*/
 	}
 	vzctl2_free_env_ids(ctids);
 	return 0;
