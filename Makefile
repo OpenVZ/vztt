@@ -28,7 +28,7 @@ MAN8_FILES = man/vzpkg.8
 NOJQUOTA_CONF_FILE = etc/nojquota.conf
 CONF_FILE = etc/vztt.conf
 URL_MAP = etc/url.map
-VZTT_LIBEXEC = src/vztt_pfcache_xattr scripts/ovz-template-converter
+VZTT_LIBEXEC = src/vztt_pfcache_xattr scripts/ovz-template-converter src/run_from_chroot
 
 #############################
 default: all
