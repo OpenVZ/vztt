@@ -431,7 +431,6 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 	char *ve_config = NULL;
 	char *ve_root = NULL;
 	char *ve_private = NULL;
-	char *ve_private_root = NULL;
 	char *ve_private_template = NULL;
 	char *pwd = NULL;
 	FILE *fp;
@@ -611,14 +610,14 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 	if ((veformat = vzctl2_get_veformat(ve_private)) == -1)
 		veformat = VZ_T_VZFS0;
 
+	/* Create .ve.layout symlink */
+	if ((rc = create_ve_layout(gc.velayout, ve_private)))
+		goto cleanup_4;
+
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		//ploop mode
-		if ((ploop_dir = strdup(to->tmpdir)) == NULL) {
-			vztt_logger(0, errno, "Cannot alloc memory");
-			rc = VZT_CANT_ALLOC_MEM;
+		if ((rc = create_ploop_dir(ve_private, &ploop_dir)))
 			goto cleanup_4;
-		}
 
 		/*disable quota*/
 		if ((fp = fopen(ve_config, "a")) == NULL) {
@@ -633,14 +632,6 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 		get_unpack_cmd(cmd, sizeof(cmd), base_cachename, ploop_dir, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_4;
-
-		snprintf(path, sizeof(path), "%s/root", ve_private);
-		mkdir(path, 0700);
-		if ((ve_private_root = strdup(path)) == NULL) {
-			vztt_logger(0, errno, "Cannot alloc memory for %s", path);
-			rc = VZT_CANT_ALLOC_MEM;
-			goto cleanup_4;
-		}
 
 		/* Get the required the ploop size */
 		struct ve_config vc;
@@ -661,8 +652,8 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 		/* clean config */
 		ve_config_clean(&vc);
 
-		/*mounting ploop*/
-		if ((rc = mount_ploop(ploop_dir, ve_private_root, opts_vztt))) {
+		/* mounting ploop */
+		if ((rc = mount_ploop(ploop_dir, ve_root, opts_vztt))) {
 			vztt_logger(0, 0, "Cannot mount ploop device");
 			rc = VZT_CANT_ALLOC_MEM;
 			goto cleanup_5;
@@ -675,10 +666,6 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 			rc = VZT_CANT_ALLOC_MEM;
 			goto cleanup_5;
 		}
-
-		/* Unlink old path */
-		if (unlink(ve_private_template))
-			vztt_logger(0, errno, "Failed to remove templates symlink");
 
 		snprintf(path, sizeof(path), "%s/templates", ploop_dir);
 		if (symlink(path, ve_private_template))
@@ -754,15 +741,9 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	tmplset_update_privdir(tmpl, ve_private);
 
-	if (ploop_dir) {
+	if (ploop_dir)
 		/* resize - ignore exit code */
 		resize_ploop(ploop_dir, opts_vztt, 0);
-
-		if ((rc = umount_ploop(ploop_dir, opts_vztt))) {
-			vztt_logger(0, 0, "Cannot unmount ploop device");
-			goto cleanup_5;
-		}
-	}
 
 	/* do not rewrote tarball for test mode */
 	if (opts_vztt->flags & OPT_VZTT_TEST)
@@ -786,9 +767,6 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 		unlink(path);
 
 	if (ploop_dir) {
-		remove_directory(ve_private);
-		remove_directory(ve_root);
-
 		/*pack ploop device to archive*/
 		rc = pack_ploop(ploop_dir, cachename, opts_vztt);
 	} else {
@@ -861,7 +839,6 @@ cleanup_2:
 		tmplset_clean(tmpl);
 	VZTT_FREE_STR(ve_root)
 	VZTT_FREE_STR(ve_private)
-	VZTT_FREE_STR(ve_private_root)
 	VZTT_FREE_STR(ve_private_template)
 	VZTT_FREE_STR(ploop_dir)
 	if (ve_config)
@@ -918,7 +895,6 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 	char *ve_config = NULL;
 	char *ve_root = NULL;
 	char *ve_private = NULL;
-	char *ve_private_root = NULL;
 	char *ve_private_template = NULL;
 	char *pwd = NULL;
 	char *ploop_dir = NULL;
@@ -1087,14 +1063,14 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 	if ((veformat = vzctl2_get_veformat(ve_private)) == -1)
 		veformat = VZ_T_VZFS0;
 
+	/* Create .ve.layout symlink */
+	if ((rc = create_ve_layout(gc.velayout, ve_private)))
+		goto cleanup_4;
+
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		//ploop mode
-		if ((ploop_dir = strdup(to->tmpdir)) == NULL) {
-			vztt_logger(0, errno, "Cannot alloc memory");
-			rc = VZT_CANT_ALLOC_MEM;
+		if ((rc = create_ploop_dir(ve_private, &ploop_dir)))
 			goto cleanup_4;
-		}
 
 		/*disable quota*/
 		if ((fp = fopen(ve_config, "a")) == NULL) {
@@ -1109,14 +1085,6 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 		get_unpack_cmd(cmd, sizeof(cmd), cachename, ploop_dir, "");
 		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
 			goto cleanup_4;
-
-		snprintf(path, sizeof(path), "%s/root", ve_private);
-		mkdir(path, 0700);
-		if ((ve_private_root = strdup(path)) == NULL) {
-			vztt_logger(0, errno, "Cannot alloc memory for %s", path);
-			rc = VZT_CANT_ALLOC_MEM;
-			goto cleanup_4;
-		}
 
 		/* Get the required the ploop size */
 		struct ve_config vc;
@@ -1138,7 +1106,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 		ve_config_clean(&vc);
 
 		/*mounting ploop*/
-		if ((rc = mount_ploop(ploop_dir, ve_private_root, opts_vztt))) {
+		if ((rc = mount_ploop(ploop_dir, ve_root, opts_vztt))) {
 			vztt_logger(0, 0, "Cannot mount ploop device");
 			rc = VZT_CANT_ALLOC_MEM;
 			goto cleanup_5;
@@ -1259,15 +1227,8 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 	tmplset_update_privdir(tmpl, ve_private);
 
 	if (ploop_dir)
-	{
 		/* resize - ignore exit code */
 		resize_ploop(ploop_dir, opts_vztt, 0);
-
-		if ((rc = umount_ploop(ploop_dir, opts_vztt))) {
-			vztt_logger(0, 0, "Cannot unmount ploop device");
-			goto cleanup_5;
-		}
-	}
 
 	progress(PROGRESS_PACK_CACHE, 0, opts_vztt->progress_fd);
 
@@ -1294,9 +1255,6 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 		unlink(path);
 
 	if (ploop_dir) {
-		remove_directory(ve_private);
-		remove_directory(ve_root);
-
 		/*pack ploop device to archive*/
 		rc = pack_ploop(ploop_dir, cachename, opts_vztt);
 	} else {
@@ -1363,7 +1321,6 @@ cleanup_2:
 		tmplset_clean(tmpl);
 	VZTT_FREE_STR(ve_root)
 	VZTT_FREE_STR(ve_private)
-	VZTT_FREE_STR(ve_private_root)
 	VZTT_FREE_STR(ve_private_template)
 	VZTT_FREE_STR(ploop_dir)
 	if (ve_config)

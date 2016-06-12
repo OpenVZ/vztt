@@ -301,6 +301,8 @@ int old_ploop_cache_exists(unsigned long archive, const char *tmpldir,
 
 int compare_osrelease(char *osrelease1, char *osrelease2);
 
+int create_ve_layout(unsigned long velayout, char *ve_private);
+
 #ifdef __cplusplus
 }
 #endif
