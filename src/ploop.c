@@ -383,7 +383,7 @@ int create_ploop_dir(char *ve_private, char **ploop_dir) {
 		return VZT_CANT_ALLOC_MEM;
 	}
 
-	snprintf((*ploop_dir), strlen(ve_private) + 10, "%s/root.hdd", ve_private);
+	sprintf((*ploop_dir), "%s/root.hdd", ve_private);
 	if (mkdir((*ploop_dir), 0755) != 0) {
 		vztt_logger(0, 0, "Failed to create %s ploop dir", (*ploop_dir));
 		return VZT_CANT_CREATE;
