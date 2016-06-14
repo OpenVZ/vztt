@@ -1909,9 +1909,9 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 
 		/* Check for vz7 template - virtual app template */
 		if (check_app_rpm_equal_os(tmpl, (struct tmpl *)a->tmpl)) {
-			vztt_logger(0, 0, "The template %s builded together with "
-				"os template %s .\nUse --force key or remove entire "
-				"os template.", app, tmpl->os->name);
+			vztt_logger(0, 0, "The template %s is built into the "
+				"OS template %s.\nYou can only remove it along with "
+				"the entire OS template.", app, tmpl->os->name);
 			rc = VZT_TMPL_NOT_EXIST;
 			goto cleanup_2;
 		}
