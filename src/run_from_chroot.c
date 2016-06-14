@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <fcntl.h>
 #include <errno.h>
+#define __USE_GNU
 #include <sched.h>
 #include <sys/select.h>
 #include <sys/time.h>
