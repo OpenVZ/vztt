@@ -1561,16 +1561,37 @@ cleanup_0:
 	return rc;
 }
 
+/* check that app and os template rpms are the same */
+static int check_app_rpm_equal_os(struct tmpl_set *tmpl, struct tmpl *atmpl) {
+	char *os_rpm = NULL;
+	char *rpm = NULL;
+	int rc = 0;
+
+	if (tmpl_get_rpm((struct tmpl *)tmpl->os, &os_rpm) == 0 &&
+		tmpl_get_rpm(atmpl, &rpm) == 0 &&
+		strcmp(os_rpm, rpm) == 0)
+		rc = 1;
+
+	VZTT_FREE_STR(rpm)
+	VZTT_FREE_STR(os_rpm)
+	return rc;
+}
+
 /* is <ostemplate> is needs by anybody */
 static int check_ostemplate_toremove(struct tmpl_set *tmpl)
 {
 	int rc = 0;
-	struct unsigned_list ve_list;
-	struct unsigned_list_el *v;
+	struct string_list ve_list;
+	struct string_list_el *v;
 	struct os_tmpl_list_el *o;
 	struct app_tmpl_list_el *a;
 
-	unsigned_list_init(&ve_list);
+	string_list_init(&ve_list);
+
+	/* Drop app templates installed in rpm together with os */
+	app_tmpl_list_for_each(&tmpl->avail_apps, a)
+		if (check_app_rpm_equal_os(tmpl, (struct tmpl *)a->tmpl))
+			app_tmpl_list_remove(&tmpl->avail_apps, a);
 
 	if (tmpl->os == (struct os_tmpl *)tmpl->base) {
 		/* ostemplate is base os template */
@@ -1593,15 +1614,15 @@ static int check_ostemplate_toremove(struct tmpl_set *tmpl)
 		/* ostemplate is extra os template */
 		rc = tmplset_get_velist_for_os(tmpl, &ve_list);
 	}
-	if (rc == 0 && !unsigned_list_empty(&ve_list)) {
+	if (rc == 0 && !string_list_empty(&ve_list)) {
 		vztt_logger(0, 0, "The next CT(s) based on %s EZ OS template:", \
 				tmpl->os->name);
 		for (v = ve_list.tqh_first; v != NULL; v = v->e.tqe_next)
-			vztt_logger(VZTL_EINFO, 0, "%d", v->u);
+			vztt_logger(VZTL_EINFO, 0, "%s", v->s);
 		rc = VZT_TMPL_INSTALLED;
 	}
 
-	unsigned_list_clean(&ve_list);
+	string_list_clean(&ve_list);
 
 	return rc;
 }
@@ -1626,7 +1647,7 @@ int vztt2_remove_os_template(char *arg, struct options_vztt *opts_vztt)
 	int rc = 0;
 	char *ostemplate;
 	char cmd[PATH_MAX+100];
-	char *rpm;
+	char *rpm = NULL;
 	void *lockdata;
 	int shared = 0;
 	char progress_stage[PATH_MAX];
@@ -1720,6 +1741,7 @@ int vztt2_remove_os_template(char *arg, struct options_vztt *opts_vztt)
 
 	tmpl_unlock(lockdata, opts_vztt->flags);
 cleanup_2:
+	VZTT_FREE_STR(rpm)
 	pm_clean(to);
 cleanup_1:
 	tmplset_clean(tmpl);
@@ -1794,7 +1816,6 @@ static int check_shared_private_templates(
 	return rc;
 }
 
-
 /* remove app template <tmpl> from HN */
 int vztt_remove_app_template(char *app, struct options *opts)
 {
@@ -1814,7 +1835,7 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 {
 	int rc = 0;
 	char cmd[PATH_MAX+100];
-	char *rpm;
+	char *rpm = NULL;
 	void *lockdata;
 	int shared = 0;
 	char progress_stage[PATH_MAX];
@@ -1823,9 +1844,9 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 	struct vztt_config tc;
 
 	struct string_list templates;
-	struct unsigned_list ave_list;
-	struct unsigned_list ve_list;
-	struct unsigned_list_el *v;
+	struct string_list ave_list;
+	struct string_list ve_list;
+	struct string_list_el *v;
 	struct app_tmpl_list_el *a;
 
 	struct tmpl_set *tmpl;
@@ -1838,8 +1859,8 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 	/* struct initialization: should be first block */
 	global_config_init(&gc);
 	vztt_config_init(&tc);
-	unsigned_list_init(&ve_list);
-	unsigned_list_init(&ave_list);
+	string_list_init(&ve_list);
+	string_list_init(&ave_list);
 	string_list_init(&templates);
 
 	/* read global vz config */
@@ -1886,21 +1907,30 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 		if ((rc = tmplset_get_velist_for_base(tmpl, &ve_list)))
 			goto cleanup_2;
 
+		/* Check for vz7 template - virtual app template */
+		if (check_app_rpm_equal_os(tmpl, (struct tmpl *)a->tmpl)) {
+			vztt_logger(0, 0, "The template %s is built into the "
+				"OS template %s.\nYou can only remove it along with "
+				"the entire OS template.", app, tmpl->os->name);
+			rc = VZT_TMPL_NOT_EXIST;
+			goto cleanup_2;
+		}
+
 		/* scan this ve's for target app template */
 		for (v = ve_list.tqh_first; v != NULL; v = v->e.tqe_next) {
-			if (ve_config_templates_read(v->u, &templates))
+			if (ve_config_templates_read(v->s, &templates))
 				goto cleanup_2;
 			if (string_list_find(&templates, app))
-				unsigned_list_add(&ave_list, v->u);
+				string_list_add(&ave_list, v->s);
 			string_list_clean(&templates);
 		}
 
-		if (!unsigned_list_empty(&ave_list)) {
+		if (!string_list_empty(&ave_list)) {
 			vztt_logger(0, 0, "The template %s installed into "
 				"next CT(s):", app);
 			for (v = ave_list.tqh_first; v != NULL;
 						v = v->e.tqe_next)
-				vztt_logger(VZTL_EINFO, 0, "%d", v->u);
+				vztt_logger(VZTL_EINFO, 0, "%s", v->s);
 			rc = VZT_TMPL_INSTALLED;
 			goto cleanup_2;
 		}
@@ -1932,12 +1962,13 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 
 	tmpl_unlock(lockdata, opts_vztt->flags);
 cleanup_2:
+	VZTT_FREE_STR(rpm)
 	pm_clean(to);
 cleanup_1:
 	tmplset_clean(tmpl);
 cleanup_0:
-	unsigned_list_clean(&ave_list);
-	unsigned_list_clean(&ve_list);
+	string_list_clean(&ave_list);
+	string_list_clean(&ve_list);
 	global_config_clean(&gc);
 	vztt_config_clean(&tc);
 

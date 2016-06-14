@@ -657,7 +657,7 @@ int check_ovz_cache(
 	if (access(cache_name, F_OK) == 0) {
 		snprintf(cmd, sizeof(cmd), OVZ_CONVERT " %s", cache_name);
 
-		if (rc = exec_cmd(cmd, 1)) {
+		if ((rc = exec_cmd(cmd, 1))) {
 			vztt_logger(0, 0, "Failed to convert the precreated cache %s",
 						cache_name);
 			return rc;
@@ -673,6 +673,8 @@ int check_ovz_cache(
 	}
 	else
 		return VZT_TMPL_NOT_CACHED;
+
+	return 0;
 }
 
 /*
@@ -2187,7 +2189,7 @@ int os_selector(const char *ctid, void *data)
 /* get list of ve's, for which OSTEMPLATE is <t->os> */
 int tmplset_get_velist_for_os(
 		struct tmpl_set *t,
-		struct unsigned_list *ls)
+		struct string_list *ls)
 {
 	int rc;
 
@@ -2224,7 +2226,7 @@ int base_os_selector(const char *ctid, void *data)
 or <OSTEMPLATE> is in <t->oses> list */
 int tmplset_get_velist_for_base(
 		struct tmpl_set *t,
-		struct unsigned_list *ls)
+		struct string_list *ls)
 {
 	int rc;
 	struct string_list os_list;
