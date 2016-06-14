@@ -1933,3 +1933,38 @@ int compare_osrelease(char *osrelease1, char *osrelease2)
 
 	return 0;
 }
+
+static int create_ve_layout_link(unsigned long velayout, char *ve_private) {
+	char path[PATH_MAX+1];
+	int rc;
+
+	snprintf(path, sizeof(path), "%s/.ve.layout", ve_private);
+	if (velayout == VZT_VE_LAYOUT5)
+		rc = symlink(VZT_VE_LAYOUT5_LINK, path);
+	else
+		rc = symlink(VZT_VE_LAYOUT4_LINK, path);
+
+	if (rc != 0)
+		vztt_logger(0, errno, "Failed to create %s symlink", path);
+
+	return rc;
+}
+
+int create_ve_layout(unsigned long velayout, char *ve_private) {
+	char path[PATH_MAX+1];
+
+	if (create_ve_layout_link(velayout, ve_private))
+		return VZT_CANT_CREATE;
+
+	if (velayout == VZT_VE_LAYOUT5)
+		return 0;
+
+	// SIMFS case
+	snprintf(path, sizeof(path), "%s/fs", ve_private);
+	if (mkdir(path, 0755)) {
+		vztt_logger(0, errno, "mkdir(%s) error", path);
+		return VZT_CANT_CREATE;
+	}
+
+	return 0;
+}
