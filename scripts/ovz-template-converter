@@ -208,7 +208,7 @@ shutil.rmtree(tempdir)
 
 # Create directory tree for selected template and fill it with empty files
 os.makedirs(distroconfpath)
-for infofile in ["mirrorlist", "packages", "package_manager", "no_pkg_actions"]:
+for infofile in ["mirrorlist", "packages", "no_pkg_actions"]:
     writeconfig(''.join([distroconfpath, "/", infofile]), '')
 
 # Fill some files with data
@@ -218,3 +218,7 @@ for infofile in ["description", "summary"]:
 # Make sure we have default config for selected distro template
 if (not os.path.exists(defaultconfpath)):
     shutil.copytree(distroconfpath, defaultconfpath)
+
+package_manager_file = ''.join([defaultconfpath, "/", "package_manager"])
+if (not os.path.exists(package_manager_file)):
+    writeconfig(package_manager_file, '')
