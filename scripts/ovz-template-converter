@@ -94,7 +94,12 @@ if (not len(templateinfo) in (3, 4)):
     print "Error: Incorrect template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)"
     sys.exit(73)
 
-tarname = ''.join([templateinfo[0], "-", templateinfo[1], "-", templateinfo[2]])
+arch = templateinfo[2]
+if arch != "x86_64" and arch != "x86":
+    print "Error: Incorrect architecture or template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)"
+    sys.exit(73)
+
+tarname = ''.join([templateinfo[0], "-", templateinfo[1], "-", arch])
 if (len(templateinfo) == 4):
     tarname += "-" + templateinfo[3]
 tarname += ".plain.ploopv2.tar"

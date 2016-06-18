@@ -657,13 +657,13 @@ int check_ovz_cache(
 	if (access(cache_name, F_OK) == 0) {
 		snprintf(cmd, sizeof(cmd), OVZ_CONVERT " %s", cache_name);
 
-		if ((rc = exec_cmd(cmd, 1))) {
+		if ((rc = exec_cmd(cmd, 0))) {
 			vztt_logger(0, 0, "Failed to convert the precreated cache %s",
 						cache_name);
 			return rc;
 		}
 
-		vztt_logger(0, 0, "The precreated cache %s for the container has been "
+		vztt_logger(1, 0, "The precreated cache %s for the container has been "
 					"found and converted into the VZ7 format.\n"
 					"Note: Such converted containers are not thoroughly "
 					"tested and may have limited functionality. "
