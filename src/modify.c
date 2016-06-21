@@ -104,14 +104,22 @@ static int cmd_modify(
 			&gc, &vc)))
 		return rc;
 
-	/* check & update metadata */
-	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
-		return rc;
-
 	/* load corresponding os template in configs directory */
 	if ((rc = tmplset_load(gc.template_dir, vc.ostemplate, &vc.templates, \
 			TMPLSET_LOAD_APP_LIST, &tmpl, opts_vztt->flags)))
 		return rc;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_0;
+	}
+
+	/* check & update metadata */
+	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
+		goto cleanup_0;
 
 	/* this mark will use for get_urls only */
 	if ((rc = tmplset_mark(tmpl, &vc.templates, \
@@ -574,14 +582,22 @@ int vztt2_install_tmpl(
 	if ((rc = check_n_load_ve_config(ctid, ENV_STATUS_RUNNING, &gc, &vc)))
 		return rc;
 
-	/* check & update metadata */
-	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
-		return rc;
-
 	/* load corresponding os template in configs directory */
 	if ((rc = tmplset_load(gc.template_dir, vc.ostemplate, &vc.templates, \
 			TMPLSET_LOAD_APP_LIST, &tmpl, opts_vztt->flags)))
 		return rc;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_0;
+	}
+
+	/* check & update metadata */
+	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
+		goto cleanup_0;
 
 	/*
 	  To include in transaction repositories/mirrorlists for OS template,
@@ -830,14 +846,22 @@ int vztt2_update_tmpl(
 	if ((rc = check_n_load_ve_config(ctid, ENV_STATUS_RUNNING, &gc, &vc)))
 		return rc;
 
-	/* check & update metadata */
-	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
-		return rc;
-
 	/* load corresponding os template in configs directory */
 	if ((rc = tmplset_load(gc.template_dir, vc.ostemplate, &vc.templates, \
 			TMPLSET_LOAD_APP_LIST, &tmpl, opts_vztt->flags)))
 		return rc;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_0;
+	}
+
+	/* check & update metadata */
+	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
+		goto cleanup_0;
 
 	string_list_init(&apps);
 	if (size > 0) {
@@ -1067,14 +1091,22 @@ int vztt2_remove_tmpl(
 	if ((rc = check_n_load_ve_config(ctid, ENV_STATUS_RUNNING, &gc, &vc)))
 		return rc;
 
-	/* check & update metadata */
-	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
-		return rc;
-
 	/* load corresponding os template in configs directory */
 	if ((rc = tmplset_load(gc.template_dir, vc.ostemplate, &vc.templates, \
 			TMPLSET_LOAD_APP_LIST, &tmpl, opts_vztt->flags)))
 		return rc;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_0;
+	}
+
+	/* check & update metadata */
+	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
+		goto cleanup_0;
 
 	for (i = 0; i < size; i++)
 		string_list_add(&apps, tlist[i]);
@@ -1302,14 +1334,22 @@ static int cmd_local(
 	if ((rc = check_n_load_ve_config(ctid, ENV_STATUS_RUNNING, &gc, &vc)))
 		return rc;
 
-	/* check & update metadata */
-	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
-		return rc;
-
 	/* load corresponding os template in configs directory */
 	if ((rc = tmplset_load(gc.template_dir, vc.ostemplate, &vc.templates, \
 			TMPLSET_LOAD_APP_LIST, &tmpl, opts_vztt->flags)))
 		return rc;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_0;
+	}
+
+	/* check & update metadata */
+	if ((rc = update_metadata(vc.ostemplate, &gc, &tc, opts_vztt)))
+		goto cleanup_0;
 
 	/* use repos of base, os and installed apps, do not use packages */
 	if ((rc = tmplset_mark(tmpl, &vc.templates, \

@@ -156,6 +156,8 @@
 #define VZT_TMPL_SHARED			68
 // VZFS reserved
 //#define VZT_TCACHE_NFS			71
+/* Template doesn't support operatins with pkgs */
+#define VZT_TMPL_PKGS_OPS_NOT_ALLOWED	73
 
 /*
     Argument errors

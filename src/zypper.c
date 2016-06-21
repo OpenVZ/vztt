@@ -449,7 +449,7 @@ static int zypper_run(
 	}
 
 	string_list_add(&args, "--root");
-	// If we doesn't have the root - we'll use the empty rpmdb provided by vzpkgenv
+	// If we does not have the root - we'll use the empty rpmdb provided by vzpkgenv
 	if (zypper->rootdir)
 		string_list_add(&args, zypper->rootdir);
 	else
@@ -908,7 +908,7 @@ int zypper_get_info(
 	}
 
 	string_list_add(&args, "--root");
-	// If we doesn't have the root - we'll use the empty rpmdb provided by vzpkgenv
+	// If we does not have the root - we'll use the empty rpmdb provided by vzpkgenv
 	if (zypper->rootdir)
 		string_list_add(&args, zypper->rootdir);
 	else

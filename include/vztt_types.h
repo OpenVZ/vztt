@@ -123,6 +123,7 @@ struct group_info {
 /* This is an especial field. For save compatibility, if you use
  VZTT_INFO_JQUOTA, VZTT_INFO_DISTRIBUTION will be overrided */
 #define VZTT_INFO_JQUOTA		(1U << 22)
+#define VZTT_INFO_NO_PKG_ACTIONS	(1U << 23)
 
 #define VZTT_INFO_TMPL_ALL	VZTT_INFO_NAME |\
 				VZTT_INFO_OSNAME |\
@@ -144,7 +145,8 @@ struct group_info {
 				VZTT_INFO_UPGRADABLE_VERSIONS |\
 				VZTT_INFO_CACHED |\
 				VZTT_INFO_OSRELEASE |\
-				VZTT_INFO_GOLDEN_IMAGE
+				VZTT_INFO_GOLDEN_IMAGE |\
+				VZTT_INFO_NO_PKG_ACTIONS
 #define VZTT_INFO_PKG_ALL	VZTT_INFO_NAME |\
 				VZTT_INFO_VERSION |\
 				VZTT_INFO_RELEASE |\

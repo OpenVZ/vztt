@@ -152,11 +152,36 @@ static int create_cache(
 			opts_vztt->flags)))
 		return rc;
 
-	/* Check for cache_type supported */
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		if (access(cachename, F_OK) != 0) {
+			snprintf(path, sizeof(path), \
+			    YUM " install -y %s",
+			    *ostemplate == '.' ? ostemplate+1 : ostemplate);
+			vztt_logger(1, 0, "Cache for %s is not found, " \
+			    "running " YUM " to install it...", ostemplate);
+
+			if ((rc = exec_cmd(path, (opts_vztt->flags & OPT_VZTT_QUIET))))
+			{
+				vztt_logger(0, 0, "Failed to install the template cache for %s",
+					ostemplate);
+				goto cleanup_0;
+			}
+			vztt_logger(1, 0, "Pre-cached image for %s successfully " \
+				"downloaded.", ostemplate);
+			goto cleanup_0;
+		}
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_0;
+	}
+
 	if ((tmpl->base->cache_type & get_cache_type(&gc)) == 0) {
 		vztt_logger(0, 0, "The template is not compatible with the " \
 			"VEFSTYPE used");
-		return VZT_TMPL_BROKEN;
+		rc = VZT_TMPL_BROKEN;
+		goto cleanup_0;
 	}
 
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
@@ -1201,10 +1226,18 @@ int vztt2_remove_cache(
 	if ((rc = global_config_read(&gc, opts_vztt)))
 		return rc;
 
-	/* init only base and os templates */
-	if ((rc = tmplset_init(gc.template_dir, ostemplate, NULL, 0, &tmpl,
-		opts_vztt->flags & ~OPT_VZTT_USE_VZUP2DATE)))
+	/* load corresponding os template in configs directory */
+	if ((rc = tmplset_load(gc.template_dir, ostemplate, NULL, 0, &tmpl,
+			opts_vztt->flags & ~OPT_VZTT_USE_VZUP2DATE)))
 		goto cleanup;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "Operation is not allowed. The template " \
+			"contains a pre-cached image.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup1;
+	}
 
 	cdata.gc = &gc;
 	cdata.tmpl = tmpl;
@@ -1213,6 +1246,7 @@ int vztt2_remove_cache(
 	rc = tmpl_callback_cache_tar(&gc, gc.template_dir, ostemplate,
 		lock_and_remove_cache, &cdata);
 
+cleanup1:
 	tmplset_clean(tmpl);
 cleanup:
 	global_config_clean(&gc);

@@ -258,6 +258,14 @@ int vztt2_upgrade(
 			TMPLSET_LOAD_APP_LIST, &s_tmpl, opts_vztt->flags)))
 		return rc;
 
+	/* Check for pkg operations allowed */
+	if (s_tmpl->base->no_pkgs_actions || s_tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_0;
+	}
+
 	/* now try to find ostemplate with osname & osarch 
 	and upgradable_version == osver or osver = osver+1 */
 	if ((rc = tmplset_find_upgrade(s_tmpl,

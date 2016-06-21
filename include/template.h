@@ -45,7 +45,8 @@ extern "C" {
 	struct repo_list zypp_repositories;\
 	struct repo_list mirrorlist; \
 	struct tmpl	*base; \
-	unsigned int golden_image;
+	unsigned int golden_image; \
+	unsigned int no_pkgs_actions;
 
 /* virtual template data structure */
 struct tmpl {

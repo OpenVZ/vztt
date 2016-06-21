@@ -81,7 +81,7 @@ static int check_appcache_options(
 	struct string_list_el *p;
 	unsigned char bin_buffer[16];
 	FILE *fc = 0;
-	char *saveptr;
+	char *saveptr = 0;
 
 	string_list_init(&sorted_apptemplates);
 	string_list_init(&given_apptemplates);
@@ -192,7 +192,7 @@ static int check_appcache_options(
 			goto cleanup;
 
 		#pragma GCC diagnostic ignored "-Waddress"
-		/* Check for templates, that doesn't support Golden Image */
+		/* Check for templates, that does not support Golden Image */
 		for (a = (*tmpl)->avail_apps.tqh_first; a != NULL;
 			a = a->e.tqe_next) \
 			string_list_for_each(&given_apptemplates, p)
@@ -209,7 +209,7 @@ static int check_appcache_options(
 				else if (a->tmpl->golden_image == 0)
 				{
 					vztt_logger(1, 0, "%s application template " \
-					"doesn't support the Golden Image feature, " \
+					"does not support the Golden Image feature, " \
 					"skipping...",
 					a->tmpl->name);
 					string_list_add(unsupported_apptemplates, p->s);
@@ -467,6 +467,14 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 			&tmpl, &apptemplates, &unsupported_apptemplates,
 			&os_app_name, &temp_list, &config_path)))
 		goto cleanup_1;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_1;
+	}
 
 	/* file name for appcache */
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
@@ -939,6 +947,14 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 			&tmpl, &apptemplates, &unsupported_apptemplates,
 			&os_app_name, &temp_list, &config_path)))
 		goto cleanup_1;
+
+	/* Check for pkg operations allowed */
+	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+		vztt_logger(0, 0, "The OS template this Container is based " \
+			"on does not support operations with packages.");
+		rc = VZT_TMPL_PKGS_OPS_NOT_ALLOWED;
+		goto cleanup_1;
+	}
 
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
 				get_cache_type(&gc), gc.template_dir, os_app_name);

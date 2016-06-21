@@ -38,6 +38,7 @@
 #include <error.h>
 #include <limits.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "vzcommon.h"
 #include "config.h"
@@ -114,6 +115,7 @@ int init_os_tmpl(
 	string_list_init(&tmpl->environment);
 	string_list_init(&tmpl->packages0);
 	string_list_init(&tmpl->packages1);
+	tmpl->no_pkgs_actions = 0;
 	init_tmpl((struct tmpl *)tmpl);
 
 	return 0;
@@ -168,6 +170,7 @@ int init_base_os_tmpl(
 	tmpl->osrelease = NULL;
 	tmpl->jquota = NULL;
 	tmpl->cache_type = VZT_CACHE_TYPE_ALL;
+	tmpl->no_pkgs_actions = 0;
 	init_tmpl((struct tmpl *)tmpl);
 	tmpl->multiarch = 1;
 
@@ -304,6 +307,13 @@ static int load_tmpl(unsigned long fld_mask, struct tmpl *tmpl)
 		if (is_disabled(val))
 			tmpl->golden_image = 0;
 		free(val);
+	}
+
+	/* Check for pkg operations allowed */
+	if (fld_mask & VZTT_INFO_NO_PKG_ACTIONS) {
+		snprintf(path, sizeof(path), "%s/no_pkg_actions", tmpl->confdir);
+		if (access(path, F_OK) == 0)
+			tmpl->no_pkgs_actions = 1;
 	}
 
 	return 0;
