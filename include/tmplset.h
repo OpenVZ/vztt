@@ -292,6 +292,8 @@ int tmplset_lock(struct tmpl_set *t, int skiplock, int action);
 /* unlock tmplset */
 void tmplset_unlock(struct tmpl_set *t, int skiplock);
 
+int check_ovz_cache(char *tmpldir, char *ostemplate, int just_check);
+
 #ifdef __cplusplus
 }
 #endif

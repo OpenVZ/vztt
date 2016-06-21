@@ -637,13 +637,14 @@ int tmplset_install(
 }
 
 /*
- Check if precreated OVZ cache file exists in the cashe directory
+ Check if precreated OVZ cache file exists in the cache directory
  If found, call external script to convert this cache into Vz7 one
  and create a dummy config for it
  */
 int check_ovz_cache(
 		char *tmpldir,
-		char *ostemplate)
+		char *ostemplate,
+		int just_check)
 {
 	char cmd[PATH_MAX+1];
 	char cache_name[PATH_MAX+1];
@@ -652,9 +653,13 @@ int check_ovz_cache(
 	snprintf(cache_name, sizeof(cache_name), "%s/cache/%s.tar.gz", \
 		tmpldir, ostemplate);
 
-	vztt_logger(1, 0, "Looking for the precreated template cache %s ",
+	if (just_check == 0)
+		vztt_logger(1, 0, "Looking for the precreated template cache %s ",
 				cache_name );
+
 	if (access(cache_name, F_OK) == 0) {
+		if (just_check)
+			return 0;
 		snprintf(cmd, sizeof(cmd), OVZ_CONVERT " %s", cache_name);
 
 		if ((rc = exec_cmd(cmd, 0))) {
@@ -701,11 +706,11 @@ int tmplset_init(
 		if ((flags & OPT_VZTT_USE_VZUP2DATE) &&
 			rc == VZT_TMPL_NOT_FOUND) {
 			if ((rc = tmplset_install(0, 0, ostemplate, flags))) {
-				if (check_ovz_cache(tmpldir, ostemplate) != 0)
+				if (check_ovz_cache(tmpldir, ostemplate, 0) != 0)
 					return rc;
 			}
 		} else {
-			if (check_ovz_cache(tmpldir, ostemplate) != 0)
+			if (check_ovz_cache(tmpldir, ostemplate, 0) != 0)
 				return rc;
 		}
 		if ((rc = parse_os_name(tmpldir, ostemplate,

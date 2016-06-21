@@ -153,7 +153,8 @@ static int create_cache(
 		return rc;
 
 	/* Check for pkg operations allowed */
-	if (tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) {
+	if ((tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) &&
+		check_ovz_cache(gc.template_dir, ostemplate, 1) != 0) {
 		if (access(cachename, F_OK) != 0) {
 			snprintf(path, sizeof(path), \
 			    YUM " install -y %s",
@@ -198,6 +199,16 @@ static int create_cache(
 
 	if ((access(cachename, F_OK) == 0) &&
 		!(opts_vztt->flags & OPT_VZTT_FORCE)) {
+		if (tmpl->os->no_pkgs_actions ||
+			check_ovz_cache(gc.template_dir, ostemplate, 1) == 0) {
+			if (mode == OPT_CACHE_RECREATE) {
+				// Unlink cache and template dir
+				remove_directory(tmpl->os->confdir);
+				unlink(cachename);
+				rc = check_ovz_cache(gc.template_dir, ostemplate, 0);
+			}
+			goto cleanup_unlock_cache;
+		}
 		if (mode == OPT_CACHE_SKIP_EXISTED) {
 			vztt_logger(1, 0, "%s cache file already exist",
 					tmpl->os->name);
@@ -224,6 +235,13 @@ static int create_cache(
 				goto cleanup_unlock_cache;
 		}
 	}
+
+	/* Second check for old OpenVZ cache existance
+	   For now smth goes wrong - OpenVz cache exists, but convertation failed
+	   or now started at all. Force it, get the error and exit. */
+	if ((tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) &&
+			(rc = check_ovz_cache(gc.template_dir, ostemplate, 0)) != 0)
+		goto cleanup_unlock_cache;
 
 	/* check & update metadata */
 	if ((rc = update_metadata(ostemplate , &gc, &tc, opts_vztt)))
