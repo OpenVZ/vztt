@@ -1377,7 +1377,7 @@ static int do_template(
 
 		vztt_logger(1, 0, "RPM package(s) is (are) not found, running %s", cmd_update);
 
-		if ((rc = exec_cmd(cmd_update, (opts_vztt->flags & OPT_VZTT_QUIET))))
+		if ((rc = execv_cmd(cmd_update, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			goto cleanup;
 	}
 
@@ -1402,7 +1402,7 @@ static int do_template(
 	}
 
 	if (szi)
-		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
+		if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			goto cleanup;
 
 	/* copy string list <ls> to string array <*a> */
@@ -1722,7 +1722,7 @@ int vztt2_remove_os_template(char *arg, struct options_vztt *opts_vztt)
 		snprintf(cmd, sizeof(cmd), "rpm -e%s%s %s", \
 			(opts_vztt->flags & OPT_VZTT_FORCE) ? " --nodeps" : "", \
 			(opts_vztt->flags & OPT_VZTT_TEST) ? " --test" : "", rpm);
-		exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET));
+		execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
 	}
 	if (!(opts_vztt->flags & OPT_VZTT_TEST)) {
 		if (tmpl->os == (struct os_tmpl *)tmpl->base) {
@@ -1952,7 +1952,7 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 		snprintf(cmd, sizeof(cmd), "rpm -e%s%s %s", \
 			(opts_vztt->flags & OPT_VZTT_FORCE) ? " --nodeps" : "", \
 			(opts_vztt->flags & OPT_VZTT_TEST) ? " --test" : "", rpm);
-		exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET));
+		execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
 	}
 	if (!(opts_vztt->flags & OPT_VZTT_TEST)) {
 		if (access(a->tmpl->confdir, F_OK) == 0)

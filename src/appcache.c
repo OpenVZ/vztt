@@ -696,29 +696,28 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 	snprintf(cmd, sizeof(cmd), \
 		VZCTL " --skiplock %s start %s --wait --skip_ve_setup",
 		opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-	vztt_logger(2, 0, "system(\"%s\")", cmd);
-	if ((rc = system(cmd)) == -1)
+	vztt_logger(2, 0, "execv(\"%s\")", cmd);
+	if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), -1) < 0))
 	{
-		vztt_logger(1, errno, "system(%s) error", cmd);
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
 	}
-	if (WEXITSTATUS(rc) == VZCTL_E_NO_LICENSE)
+	else if (rc == VZCTL_E_NO_LICENSE)
 	{
 		vztt_logger(1, 0, "VZ license not loaded, or invalid class ID");
 		rc = VZT_NO_LICENSE;
 		goto cleanup_5;
 	}
-	else if (WEXITSTATUS(rc) == VZCTL_E_WAIT_FAILED)
+	else if (rc == VZCTL_E_WAIT_FAILED)
 	{
 		/* In this case Container is still runned! */
 		vztt_logger(1, 0, "Failed to setup CT start wait functionality");
 		rc = VZT_CMD_FAILED;
 		goto cleanup_6;
 	}
-	else if (WEXITSTATUS(rc))
+	else if (rc)
 	{
-		vztt_logger(1, 0, "\"%s\" return %d", cmd, WEXITSTATUS(rc));
+		vztt_logger(1, 0, "\"%s\" return %d", cmd, rc);
 		rc = VZT_CMD_FAILED;
 		goto cleanup_5;
 	}
@@ -744,7 +743,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",\
 			ctid);
-	if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
+	if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 		goto cleanup_5;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -827,7 +826,7 @@ cleanup_7:
 cleanup_6:
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",
 			ctid);
-	if (exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET)))
+	if (execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1))
 		vztt_logger(1, 0, "Failed to stop Container: %s", ctid);
 
 cleanup_5:
@@ -1161,29 +1160,28 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 	snprintf(cmd, sizeof(cmd), \
 		VZCTL " --skiplock %s start %s --wait --skip_ve_setup",
 		opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-	vztt_logger(2, 0, "system(\"%s\")", cmd);
-	if ((rc = system(cmd)) == -1)
+	vztt_logger(2, 0, "execv(\"%s\")", cmd);
+	if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), -1) < 0))
 	{
-		vztt_logger(1, errno, "system(%s) error", cmd);
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
 	}
-	if (WEXITSTATUS(rc) == VZCTL_E_NO_LICENSE)
+	else if (rc == VZCTL_E_NO_LICENSE)
 	{
 		vztt_logger(1, 0, "VZ license not loaded, or invalid class ID");
 		rc = VZT_NO_LICENSE;
 		goto cleanup_5;
 	}
-	else if (WEXITSTATUS(rc) == VZCTL_E_WAIT_FAILED)
+	else if (rc == VZCTL_E_WAIT_FAILED)
 	{
 		/* In this case Container is still runned! */
 		vztt_logger(1, 0, "Failed to setup CT start wait functionality");
 		rc = VZT_CMD_FAILED;
 		goto cleanup_6;
 	}
-	else if (WEXITSTATUS(rc))
+	else if (rc)
 	{
-		vztt_logger(1, 0, "\"%s\" return %d", cmd, WEXITSTATUS(rc));
+		vztt_logger(1, 0, "\"%s\" return %d", cmd, rc);
 		rc = VZT_CMD_FAILED;
 		goto cleanup_5;
 	}
@@ -1237,7 +1235,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",\
 			ctid);
-	if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
+	if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 		goto cleanup_4;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -1318,7 +1316,7 @@ cleanup_7:
 cleanup_6:
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",
 			ctid);
-	if (exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET)))
+	if (execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1))
 		vztt_logger(1, 0, "Failed to stop Container: %s", ctid);
 
 cleanup_5:

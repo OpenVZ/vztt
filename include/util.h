@@ -165,6 +165,8 @@ int copy_file(const char *dst, const char *src);
 int move_file(const char *dst, const char *src);
 /*  execute command and check exit code */
 int exec_cmd(char *cmd, int quiet);
+/*  execute command by execv and check exit code */
+int execv_cmd(char *cmd, int quiet, int mod);
 
 /* cut off leading and tailing blank symbol from string */
 char *cut_off_string(char *str);

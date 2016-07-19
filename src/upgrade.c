@@ -299,9 +299,7 @@ int vztt2_upgrade(
 		t_tmpl->base->osrelease);
 
 		vztt_logger(2, 0, buf);
-		if (system(buf)) {
-			vztt_logger(0, errno, "%s error", buf);
-			rc = VZT_CANT_EXEC;
+		if ((rc = execv_cmd(buf, 1, 1))) {
 			goto cleanup_2;
 		}
 	}
@@ -366,9 +364,7 @@ int vztt2_upgrade(
 	snprintf(buf, sizeof(buf), "%s --skiplock --quiet stop %s --fast", \
 				VZCTL, ctid);
 	vztt_logger(2, 0, buf);
-	if (system(buf)) {
-		vztt_logger(0, errno, "%s error", buf);
-		rc = VZT_CANT_EXEC;
+	if ((rc = execv_cmd(buf, 1, 1))) {
 		goto cleanup_4;
 	}
 
@@ -395,9 +391,7 @@ int vztt2_upgrade(
 	snprintf(buf, sizeof(buf), "%s --skiplock --quiet start %s --wait", \
 			VZCTL, ctid);
 	vztt_logger(2, 0, buf);
-	if (system(buf)) {
-		vztt_logger(0, errno, "%s error", buf);
-		rc = VZT_CANT_EXEC;
+	if ((rc = execv_cmd(buf, 1, 1))) {
 		goto cleanup_4;
 	}
 
@@ -410,10 +404,7 @@ int vztt2_upgrade(
 	snprintf(buf, sizeof(buf), "%s --skiplock --quiet restart %s --wait", \
 			VZCTL, ctid);
 	vztt_logger(2, 0, buf);
-	if (system(buf)) {
-		vztt_logger(0, errno, "%s error", buf);
-		rc = VZT_CANT_EXEC;
-	}
+	rc = execv_cmd(buf, 1, 1);
 
 cleanup_4:
 	tmpl_unlock(lockdata, opts_vztt->flags);

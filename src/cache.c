@@ -162,7 +162,7 @@ static int create_cache(
 			vztt_logger(1, 0, "Cache for %s is not found, " \
 			    "running " YUM " to install it...", ostemplate);
 
-			if ((rc = exec_cmd(path, (opts_vztt->flags & OPT_VZTT_QUIET))))
+			if ((rc = execv_cmd(path, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			{
 				vztt_logger(0, 0, "Failed to install the template cache for %s",
 					ostemplate);
@@ -392,14 +392,13 @@ static int create_cache(
 	snprintf(cmd, sizeof(cmd),
 		VZCTL " --skiplock %s mount %s --skip_ve_setup",
 		opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-	vztt_logger(2, 0, "system(\"%s\")", cmd);
-	if ((rc = system(cmd)) == -1) {
-		vztt_logger(0, errno, "system(%s) error", cmd);
+	vztt_logger(2, 0, "execv(\"%s\")", cmd);
+	if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), -1) < 0)) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_3;
 	}
-	if (WEXITSTATUS(rc)) {
-		vztt_logger(0, 0, "\"%s\" return %d", cmd, WEXITSTATUS(rc));
+	else if (rc) {
+		vztt_logger(0, 0, "\"%s\" return %d", cmd, rc);
 		rc = VZT_CMD_FAILED;
 		goto cleanup_3;
 	}
@@ -408,9 +407,8 @@ static int create_cache(
 		/* set 'trusted' xattr on CT root, let's kernel will calculate
 		   checksum for all files in CT (https://jira.sw.ru/browse/PSBM-10447) */
 		snprintf(cmd, sizeof(cmd), PFCACHE_BIN " set %s", ve_root);
-		vztt_logger(2, 0, "system(\"%s\")", cmd);
-		if (system(cmd)) {
-			rc = vztt_error(VZT_CANT_EXEC, errno, "system(%s) error", cmd);
+		if (execv_cmd(cmd, 1, 1)) {
+			rc = vztt_error(VZT_CANT_EXEC, errno, "execv(%s) error", cmd);
 			goto cleanup_4;
 		}
 	}
@@ -448,19 +446,18 @@ static int create_cache(
 	snprintf(cmd, sizeof(cmd),
 		VZCTL " --skiplock %s start %s --skip_ve_setup",
 		opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-	vztt_logger(2, 0, "system(\"%s\")", cmd);
-	if ((rc = system(cmd)) == -1) {
-		vztt_logger(0, errno, "system(%s) error", cmd);
+	vztt_logger(2, 0, "execv(\"%s\")", cmd);
+	if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), -1)) < 0) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
 	}
-	if (WEXITSTATUS(rc) == VZCTL_E_NO_LICENSE) {
+	if (rc == VZCTL_E_NO_LICENSE) {
 		vztt_logger(0, 0, "VZ license not loaded, or invalid class ID");
 		rc = VZT_NO_LICENSE;
 		goto cleanup_5;
 	}
-	else if (WEXITSTATUS(rc)) {
-		vztt_logger(0, 0, "\"%s\" return %d", cmd, WEXITSTATUS(rc));
+	else if (rc) {
+		vztt_logger(0, 0, "\"%s\" return %d", cmd, rc);
 		rc = VZT_CMD_FAILED;
 		goto cleanup_5;
 	}
@@ -483,30 +480,16 @@ static int create_cache(
 		snprintf(cmd, sizeof(cmd),
 			VZCTL " --skiplock %s stop %s --fast",
 			opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-		vztt_logger(2, 0, "system(\"%s\")", cmd);
-		if ((rc = system(cmd)) == -1) {
-			vztt_logger(0, errno, "system(%s) error", cmd);
-			rc = VZT_CANT_EXEC;
-			goto cleanup_6;
-		}
-		if (WEXITSTATUS(rc)) {
-			vztt_logger(0, 0, "\"%s\" return %d", cmd, WEXITSTATUS(rc));
-			rc = VZT_CMD_FAILED;
+		vztt_logger(2, 0, "execv(\"%s\")", cmd);
+		if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), 1))) {
 			goto cleanup_6;
 		}
 
 		snprintf(cmd, sizeof(cmd),
 			VZCTL " --skiplock %s start %s --skip_ve_setup",
 			opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-		vztt_logger(2, 0, "system(\"%s\")", cmd);
-		if ((rc = system(cmd)) == -1) {
-			vztt_logger(0, errno, "system(%s) error", cmd);
-			rc = VZT_CANT_EXEC;
-			goto cleanup_6;
-		}
-		if (WEXITSTATUS(rc)) {
-			vztt_logger(0, 0, "\"%s\" return %d", cmd, WEXITSTATUS(rc));
-			rc = VZT_CMD_FAILED;
+		vztt_logger(2, 0, "execv(\"%s\")", cmd);
+		if ((rc = execv_cmd(cmd, (opts_vztt->debug), 1))) {
 			goto cleanup_6;
 		}
 
@@ -528,9 +511,9 @@ static int create_cache(
 	if (ploop_dir) {
 		/* clear 'trusted' xattr for directories, missing in white list */
 		snprintf(cmd, sizeof(cmd), PFCACHE_BIN " clear %s", ve_root);
-		vztt_logger(2, 0, "system(\"%s\")", cmd);
-		if (system(cmd)) {
-			rc = vztt_error(VZT_CANT_EXEC, errno, "system(%s) error", cmd);
+		vztt_logger(2, 0, "execv(\"%s\")", cmd);
+		if (execv_cmd(cmd, 1, 1)) {
+			rc = vztt_error(VZT_CANT_EXEC, errno, "execv(%s) error", cmd);
 			goto cleanup_6;
 		}
 	}
@@ -562,7 +545,7 @@ static int create_cache(
 
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",\
 			ctid);
-	if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
+	if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 		goto cleanup_4;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -593,12 +576,12 @@ static int create_cache(
 		unlink(path);
 
 	if (ploop_dir) {
-		/*move 'templates' to directory with ploop device. it should be packed
+		/* move 'templates' to directory with ploop device. it should be packed
 		 together with ploop */
 		snprintf(cmd, sizeof(cmd),
-			"mv  %s  %s ", ve_private_template, ploop_dir);
+			"/bin/mv %s %s", ve_private_template, ploop_dir);
 
-		if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
+		if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			vztt_logger(0, 0, "Failed to move 'template' directory");
 		else
 		{
@@ -638,16 +621,14 @@ cleanup_6:
 	tmpl_unlock(lockdata, opts_vztt->flags);
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",
 			ctid);
-	if (system(cmd) == -1)
-		vztt_logger(0, errno, "system(%s) failed", cmd);
+	execv_cmd(cmd, 1, 1);
 	goto cleanup_3;
 cleanup_5:
 	tmpl_unlock(lockdata, opts_vztt->flags);
 cleanup_4:
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet umount %s",
 			ctid);
-	if (system(cmd) == -1)
-		vztt_logger(0, errno, "system(%s) failed", cmd);
+	execv_cmd(cmd, 1, 1);
 
 cleanup_3:
 	if (ploop_dir)
@@ -929,19 +910,18 @@ int update_cache(
 	snprintf(cmd, sizeof(cmd), \
 		VZCTL " --skiplock %s start %s --skip_ve_setup",
 		opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-	vztt_logger(2, 0, "system(\"%s\")", cmd);
-	if ((rc = system(cmd)) == -1) {
-		vztt_logger(0, errno, "system(%s) error", cmd);
+	vztt_logger(2, 0, "execv(\"%s\")", cmd);
+	if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), -1)) < 0) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_3;
 	}
-	if (WEXITSTATUS(rc) == VZCTL_E_NO_LICENSE) {
+	else if (rc == VZCTL_E_NO_LICENSE) {
 		vztt_logger(0, 0, "VZ license not loaded, or invalid class ID");
 		rc = VZT_NO_LICENSE;
 		goto cleanup_3;
 	}
-	else if (WEXITSTATUS(rc)) {
-		vztt_logger(0, 0, "\"%s\" return %d", cmd, WEXITSTATUS(rc));
+	else if (rc) {
+		vztt_logger(0, 0, "\"%s\" return %d", cmd, rc);
 		rc = VZT_CMD_FAILED;
 		goto cleanup_3;
 	}
@@ -991,7 +971,7 @@ int update_cache(
 
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",\
 			ctid);
-	if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
+	if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 		goto cleanup_3;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -1058,8 +1038,7 @@ cleanup_5:
 cleanup_4:
 	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",\
 			ctid);
-	if (system(cmd) == -1)
-		vztt_logger(0, errno, "system(%s) failed", cmd);
+	execv_cmd(cmd, 1, 1);
 cleanup_3:
 	if (ploop_dir)
 		umount_ploop(ploop_dir, opts_vztt);

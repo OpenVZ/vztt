@@ -1390,6 +1390,82 @@ int exec_cmd(char *cmd, int quiet)
 	return 0;
 }
 
+/* execute command and check exit code */
+int execv_cmd(char *cmd, int quiet, int mod)
+{
+	int rc = 0, fd0 = -1, fd1 = -1, i = 1, sa_flags;
+	struct sigaction act_chld, act_quit, act_int;
+	// Should be enough
+	char *argv[255];
+	pid_t child_pid;
+	int status = 0;
+	char *p = cmd;
+
+	argv[0] = p;
+	while ((p = strchr(p, ' ')) != NULL) {
+		*p = 0;
+		p++;
+		argv[i] = p;
+		i++;
+	}
+
+	argv[i] = '\0';
+
+	sigaction(SIGCHLD, NULL, &act_chld);
+	sa_flags = act_chld.sa_flags;
+	act_chld.sa_flags = SA_NOCLDSTOP;
+	sigaction(SIGCHLD, &act_chld, NULL);
+
+	/* ignore sigquit & sigint in parent */
+	sigaction(SIGQUIT, NULL, &act_quit);
+	signal(SIGQUIT, SIG_IGN);
+	sigaction(SIGINT, NULL, &act_int);
+	signal(SIGINT, SIG_IGN);
+
+	child_pid = fork();
+	if (0 == child_pid) {
+		/* allow C-c for child */
+		signal(SIGINT, SIG_DFL);
+		/* allow sigquit for child */
+		signal(SIGQUIT, SIG_DFL);
+		if (quiet) {
+			/* if quiet - redirect stdout to /dev/null */
+			fd0 = open("/dev/null", O_WRONLY);
+			fd1 = open("/dev/null", O_WRONLY);
+			/* save stdout */
+			dup2(STDOUT_FILENO, fd1);
+			/* redirect stdout to /dev/null */
+			dup2(fd0, STDOUT_FILENO);
+		}
+		execv(argv[0], argv);
+		vztt_logger(0, errno, "execv(%s...) failed", argv[0]);
+		exit(VZT_CANT_EXEC);
+	} else if (child_pid == -1) {
+		vztt_logger(0, errno, "fork() failed");
+		rc = mod * VZT_CANT_EXEC;
+	} else if (child_pid > 0) {
+		vztt_logger(3, 0, "execv(%s...)", argv[0]);
+		if (wait(&status) == -1) {
+			vztt_logger(0, errno, "wait() error");
+			rc = mod * VZT_CMD_FAILED;
+		} else {
+			if (WIFEXITED(status)) {
+				rc = WEXITSTATUS(status);
+			} else if (WIFSIGNALED(status)) {
+				vztt_logger(0, 0,  "Got signal %d", WTERMSIG(status));
+				rc = mod * VZT_CMD_FAILED;
+			}
+		}
+	}
+
+	sigaction(SIGINT, &act_int, NULL);
+	sigaction(SIGQUIT, &act_quit, NULL);
+	act_chld.sa_flags = sa_flags;
+	sigaction(SIGCHLD, &act_chld, NULL);
+
+	return rc;
+}
+
 /* get VE private VZFS root directory */
 void get_ve_private_root(
 		const char *veprivate,
