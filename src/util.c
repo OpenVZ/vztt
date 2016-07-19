@@ -1391,20 +1391,22 @@ int exec_cmd(char *cmd, int quiet)
 }
 
 /* execute command and check exit code */
+#define EXECV_CMD_MAX_ARGS 255 // Should be enough
 int execv_cmd(char *cmd, int quiet, int mod)
 {
 	int rc = 0, fd0 = -1, fd1 = -1, i = 1, sa_flags;
 	struct sigaction act_chld, act_quit, act_int;
-	// Should be enough
-	char *argv[255];
+	char *argv[EXECV_CMD_MAX_ARGS];
 	pid_t child_pid;
 	int status = 0;
 	char *p = cmd;
 
 	argv[0] = p;
-	while ((p = strchr(p, ' ')) != NULL) {
+	while ((p = strchr(p, ' ')) != NULL && i < EXECV_CMD_MAX_ARGS) {
 		*p = 0;
 		p++;
+		while (*p == ' ')
+			p++;
 		argv[i] = p;
 		i++;
 	}
