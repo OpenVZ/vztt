@@ -140,14 +140,14 @@ static int get_ve_pkg_info(
 	if (!(ve_status.mask & (ENV_STATUS_RUNNING | ENV_STATUS_MOUNTED))) {
 		/* CT is not mounted or running - will mount it temporary */
 		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet mount %s", ctid);
-		if ((rc = exec_cmd(buf, (opts_vztt->flags & OPT_VZTT_QUIET))))
+		if ((rc = execv_cmd(buf, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			goto cleanup_1;
 		mounted = 1;
 	}
 	rc = to->pm_ve_get_info(to, package, pi);
 	if (mounted) {
 		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet umount %s", ctid);
-		exec_cmd(buf, (opts_vztt->flags & OPT_VZTT_QUIET));
+		execv_cmd(buf, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
 	}
 cleanup_2:
 	pm_clean(to);

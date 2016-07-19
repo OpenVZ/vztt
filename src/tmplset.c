@@ -604,8 +604,8 @@ int tmplset_install(
 	vztt_logger(1, 0, "Some template(s)%s is not found, " \
 	    "running " YUM " to install it...", tmpl_string);
 
-	if ((rc = exec_cmd(cmd, (flags & OPT_VZTT_QUIET))) && \
-		(rc = exec_cmd(cmd_noarch, (flags & OPT_VZTT_QUIET))))
+	if ((rc = execv_cmd(cmd, (flags & OPT_VZTT_QUIET), 1)) && \
+		(rc = execv_cmd(cmd_noarch, (flags & OPT_VZTT_QUIET), 1)))
 	{
 		vztt_logger(0, 0, "Failed to install the template(s):%s",
 			tmpl_string);
@@ -662,7 +662,7 @@ int check_ovz_cache(
 			return 0;
 		snprintf(cmd, sizeof(cmd), OVZ_CONVERT " %s", cache_name);
 
-		if ((rc = exec_cmd(cmd, 0))) {
+		if ((rc = execv_cmd(cmd, 0, 1))) {
 			vztt_logger(0, 0, "Failed to convert the precreated cache %s",
 						cache_name);
 			return rc;

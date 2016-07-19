@@ -324,7 +324,7 @@ int pm_init(
 			vztt_logger(1, 0, "Environment %s is not" \
 			    " found, running " YUM \
 			    " to install it...", path);
-			if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET))))
+			if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			{
 				vztt_logger(0, 0, "Failed to install the environment " \
 					"package required for the template.");
@@ -1071,14 +1071,14 @@ int pm_get_installed_pkg_from_ve(
 	if (!(ve_status.mask & (ENV_STATUS_RUNNING | ENV_STATUS_MOUNTED))) {
 		/* CT is not mounted or running - will mount it temporary */
 		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet mount %s", ctid);
-		if ((rc = exec_cmd(buf, pm->quiet)))
+		if ((rc = execv_cmd(buf, pm->quiet, 1)))
 			return rc;
 		mounted = 1;
 	}
 	rc = pm->pm_get_install_pkg(pm, installed);
 	if (mounted) {
 		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet umount %s", ctid);
-		exec_cmd(buf, pm->quiet);
+		execv_cmd(buf, pm->quiet, 1);
 	}
 	return rc;
 }
