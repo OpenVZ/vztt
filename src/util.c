@@ -1441,7 +1441,7 @@ int execv_cmd(char *cmd, int quiet, int mod)
 		}
 		execv(argv[0], argv);
 		vztt_logger(0, errno, "execv(%s...) failed", argv[0]);
-		exit(VZT_CANT_EXEC);
+		_exit(VZT_CANT_EXEC);
 	} else if (child_pid == -1) {
 		vztt_logger(0, errno, "fork() failed");
 		rc = mod * VZT_CANT_EXEC;
