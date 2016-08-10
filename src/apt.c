@@ -1710,7 +1710,7 @@ int apt_create_init_cache(
 	struct string_list *packages,
 	struct package_list *installed)
 {
-	int rc;
+	int rc = 0;
 	char buf[PATH_MAX+1];
 	struct package_list empty;
 	struct package_list_el *p;
@@ -1726,6 +1726,7 @@ int apt_create_init_cache(
 	package_list_init(&empty);
 	string_list_init(&ls0);
 	string_list_init(&ls);
+	string_list_init(&opts);
 
 	progress(PROGRESS_PKGMAN_DOWNLOAD_PACKAGES, 0, pm->progress_fd);
 
@@ -1769,7 +1770,7 @@ int apt_create_init_cache(
 	progress(PROGRESS_PKGMAN_INST_PACKAGES1, 0, pm->progress_fd);
 
 	for (l = ls0.tqh_first; l != NULL; l = l->e.tqe_next) {
-		string_list_init(&opts);
+		string_list_clean(&opts);
 		string_list_add(&opts, "--no-scripts");
 		apt_cache_common_opts(pm, &opts);
 		string_list_add(&opts, "--force-all");
@@ -1792,12 +1793,12 @@ int apt_create_init_cache(
 		strncat(buf, DEB_EXT, sizeof(buf)-strlen(buf)-1);
 		string_list_add(&opts, buf);
 		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
-			return rc;
+			goto cleanup;
 	}
 	progress(PROGRESS_PKGMAN_INST_PACKAGES1, 100, pm->progress_fd);
 	progress(PROGRESS_PKGMAN_INST_PACKAGES2, 0, pm->progress_fd);
 	for (l = packages1->tqh_first; l != NULL; l = l->e.tqe_next) {
-		string_list_init(&opts);
+		string_list_clean(&opts);
 		string_list_add(&opts, "--no-scripts");
 		apt_cache_common_opts(pm, &opts);
 		string_list_add(&opts, "--force-all");
@@ -1821,17 +1822,18 @@ int apt_create_init_cache(
 		strncat(buf, DEB_EXT, sizeof(buf)-strlen(buf)-1);
 		string_list_add(&opts, buf);
 		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
-			return rc;
+			goto cleanup;
 	}
 
 	progress(PROGRESS_PKGMAN_INST_PACKAGES2, 100, pm->progress_fd);
 
+cleanup:
 	string_list_clean(&opts);
 	string_list_clean(&ls0);
 	string_list_clean(&ls);
 	package_list_clean_all(&empty);
 
-	return 0;
+	return rc;
 }
 
 /* create OS template cache - install post-init OS template packages */
@@ -1842,7 +1844,7 @@ int apt_create_post_init_cache(
 	struct string_list *packages,
 	struct package_list *installed)
 {
-	int rc;
+	int rc = 0;
 	char buf[PATH_MAX+1];
 	char path[PATH_MAX+1];
 	char cmd[2*PATH_MAX+1];
@@ -1870,9 +1872,9 @@ int apt_create_post_init_cache(
 		return VZT_CANT_OPEN;
 	}
 	fputs("Package: dpkg\nVersion: 1.9.1\nStatus: install ok installed\n" \
-		"Maintainer: Parallels <wolf@parallels.com>\n" \
+		"Maintainer: Virtuozzo <wolf@virtuozzo.com>\n" \
 		"Architecture: all\n" \
-		"Description: dpkg patched by Parallels\n", fp);
+		"Description: dpkg patched by Virtuozzo\n", fp);
 	fclose(fp);
 
 	for (l = packages0->tqh_first; l != NULL; l = l->e.tqe_next) {
@@ -1910,7 +1912,7 @@ int apt_create_post_init_cache(
 			string_list_add(&opts, path);
 		}
 		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
-			return rc;
+			goto cleanup;
 	}
 
 	string_list_clean(&opts);
@@ -1944,26 +1946,28 @@ int apt_create_post_init_cache(
 		strncat(buf, DEB_EXT, sizeof(buf)-strlen(buf)-1);
 		string_list_add(&opts, buf);
 	}
-	if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
-		return rc;
-	string_list_clean(&opts);
 
-	snprintf(cmd, sizeof(cmd), \
-		VZCTL " exec2 %s \"LANG=C DEBIAN_FRONTEND=noninteractive "\
-		"dpkg --configure --pending --force-configure-any "\
-		"--force-confold --force-depends\"", pm->ctid);
-	if ((rc = exec_cmd(cmd, pm->quiet)))
-		return rc;
+	if (string_list_size(packages1)) {
+		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
+			goto cleanup;
+
+		snprintf(cmd, sizeof(cmd), \
+			VZCTL " exec2 %s \"LANG=C DEBIAN_FRONTEND=noninteractive "\
+			"dpkg --configure --pending --force-configure-any "\
+			"--force-confold --force-depends\"", pm->ctid);
+		if ((rc = exec_cmd(cmd, pm->quiet)))
+			goto cleanup;
+	}
 
 	if ((rc = pm_create_outfile(pm)))
-		return rc;
+		goto cleanup;
 
 	/* resolve unmet dependencies : "apt-get -f install" 
 	(Fix-Broken=true in config) */
 	if ((rc = apt_action(pm, VZPKG_INSTALL, 0)))
-		return rc;
+		goto cleanup;
 	if ((rc = apt_action(pm, VZPKG_INSTALL, packages)))
-		return rc;
+		goto cleanup;
 
 	/* parse outfile */
 	if ((rc = read_outfile(pm->outfile, &added, &removed)))
@@ -1973,12 +1977,13 @@ int apt_create_post_init_cache(
 
 cleanup:
 	pm_remove_outfile(pm);
+	string_list_clean(&opts);
 	package_list_clean(&added);
 	package_list_clean(&removed);
 
 	progress(PROGRESS_PKGMAN_INST_PACKAGES3, 100, pm->progress_fd);
 
-	return 0;
+	return rc;
 }
 
 

@@ -348,7 +348,7 @@ int call_VE_script(
 	progress(progress_stage, 0, progress_fd);
 
 	/* Create temp dir */
-	snprintf(tmp_dir, sizeof(tmp_dir), "%s/root/vzttXXXXXX", ve_root);
+	snprintf(tmp_dir, sizeof(tmp_dir), "%s/vzttXXXXXX", ve_root);
 	if (mkdtemp(tmp_dir) == NULL) {
 		vztt_logger(0, errno, "mkdtemp(%s) error", tmp_dir);
 		return VZT_CANT_CREATE;
