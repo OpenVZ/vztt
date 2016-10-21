@@ -1735,8 +1735,19 @@ int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
 	for (i = 0; i < ARCHIVES_COUNT; ++i) {
 		if (tmpl_get_cache_tar_name(path, size, ARCHIVES[i], cache_type, tmpldir, osname) == -1)
 			return -2;
-		if (stat(path, &st) == 0)
+		if (stat(path, &st) == 0) {
+			/* Should check for prlcompress here */
+			if (ARCHIVES[i] == VZT_ARCHIVE_LZRW && stat(PRL_COMPRESS_FP, &st) != 0) {
+				snprintf(path, size, YUM " install -y " PRL_COMPRESS);
+				vztt_logger(1, 0, PRL_COMPRESS " utility is not found, " \
+				    "running " YUM " to install it...");
+				if (execv_cmd(path, 1, 1)) {
+					vztt_logger(0, 0, "Failed to install the " PRL_COMPRESS);
+					return -1;
+				}
+			}
 			return 0;
+		}
 	}
 
 	return -1;

@@ -80,6 +80,7 @@
 #define VZ_TMP_DIR	"/vz/tmp/"
 #define TAR		"tar"
 #define PRL_COMPRESS	"prlcompress"
+#define PRL_COMPRESS_FP	"/bin/" PRL_COMPRESS
 #define LZ4				"lz4"
 #define YUM		"/usr/bin/yum"
 #define OVZ_CONVERT	"/usr/libexec/ovz-template-converter"
