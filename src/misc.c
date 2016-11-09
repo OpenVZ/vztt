@@ -1086,7 +1086,7 @@ static int do_template(
 	char *cmd_update = NULL;
 	char *update_install = " install -y";
 	char *update_update = " update -y";
-	char *rpmu = "rpm -U";
+	char *rpmu = RPMBIN " -U";
 	char *force = " --force --nodeps";
 	char *quiet = " --quiet", *verbose = " -hv", *test = " --test";
 	struct string_list ls;
@@ -1516,7 +1516,7 @@ int vztt2_remove_os_template(char *arg, struct options_vztt *opts_vztt)
 
 	/* remove rpm, provides this template */
 	if (tmpl_get_rpm((struct tmpl *)tmpl->os, &rpm) == 0) {
-		snprintf(cmd, sizeof(cmd), "rpm -e%s%s %s", \
+		snprintf(cmd, sizeof(cmd), RPMBIN " -e%s%s %s", \
 			(opts_vztt->flags & OPT_VZTT_FORCE) ? " --nodeps" : "", \
 			(opts_vztt->flags & OPT_VZTT_TEST) ? " --test" : "", rpm);
 		execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
@@ -1746,7 +1746,7 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 
 	/* remove rpm, provides this template */
 	if (tmpl_get_rpm((struct tmpl *)a->tmpl, &rpm) == 0) {
-		snprintf(cmd, sizeof(cmd), "rpm -e%s%s %s", \
+		snprintf(cmd, sizeof(cmd), RPMBIN " -e%s%s %s", \
 			(opts_vztt->flags & OPT_VZTT_FORCE) ? " --nodeps" : "", \
 			(opts_vztt->flags & OPT_VZTT_TEST) ? " --test" : "", rpm);
 		execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1);

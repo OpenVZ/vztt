@@ -83,6 +83,7 @@
 #define PRL_COMPRESS_FP	"/bin/" PRL_COMPRESS
 #define LZ4				"lz4"
 #define YUM		"/usr/bin/yum"
+#define RPMBIN		"/usr/bin/rpm"
 #define OVZ_CONVERT	"/usr/libexec/ovz-template-converter"
 
 #define LIBDIR 		"/usr/lib/"
