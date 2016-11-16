@@ -314,12 +314,21 @@ int lock_ve(const char *ctid, int vztt, void **lockdata)
 
 void unlock_ve(const char *ctid, void *lockdata, int vztt)
 {
-	int fd;
+	int fd, err;
+	struct vzctl_env_handle *h;
 
 	if (vztt & OPT_VZTT_SKIP_LOCK)
 		return;
 	memcpy(&fd, &lockdata, sizeof(fd));
-	vzctl2_env_unlock(NULL, fd);
+	h = vzctl2_env_open(ctid, VZCTL_CONF_SKIP_NON_EXISTS, &err);
+	if (h == NULL) {
+		vztt_logger(0, 0, "vzctl2_env_open %s: %s",
+				ctid, vzctl2_get_last_error());
+		vzctl2_env_unlock(NULL, fd);
+	} else {
+		vzctl2_env_unlock(h, fd);
+		vzctl2_env_close(h);
+	}
 	vztt_logger(2, 0, "Container %s unlocked, fd=%d", ctid, fd);
 }
 
