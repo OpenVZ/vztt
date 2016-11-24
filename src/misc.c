@@ -1088,7 +1088,8 @@ static int do_template(
 	char *update_update = " update -y";
 	char *rpmu = RPMBIN " -U";
 	char *force = " --force --nodeps";
-	char *quiet = " --quiet", *verbose = " -hv", *test = " --test";
+	char *quiet = " --quiet", *verbose = " -hv", *test = " --test",
+		*testyum = " --assumeno";
 	struct string_list ls;
 	struct string_list existed;
 	struct string_list packages_list;
@@ -1109,17 +1110,21 @@ static int do_template(
 	string_list_init(&packages_list);
 
 	len_update = strlen(YUM) + strlen(update_install) + 1;
-	len = strlen(rpmu) + 1;
 	if (opts_vztt->flags & OPT_VZTT_FORCE)
-		len += strlen(force);
+		len = strlen(rpmu) + strlen(force) + 1;
+	else
+		len = len_update;
 	if (opts_vztt->flags & OPT_VZTT_QUIET) {
 		len += strlen(quiet);
 		len_update += strlen(quiet);
 	} else {
 		len += strlen(verbose);
 	}
-	if (opts_vztt->flags & OPT_VZTT_TEST)
-		len += strlen(test);
+	if (opts_vztt->flags & OPT_VZTT_TEST) {
+		len += (opts_vztt->flags & OPT_VZTT_FORCE ?
+			strlen(test) : strlen(testyum));
+		len_update += strlen(testyum);
+	}
 	for (i = 0; rpms[i] && (i < sz); i++) {
 		if ((rc = check_ez_rpm(rpms[i], opts_vztt->flags, &ls, &existed))) {
 			if (rc == VZT_FILE_NFOUND &&
@@ -1172,6 +1177,10 @@ static int do_template(
 			strncat(cmd_update, quiet, len_update -
                                 strlen(cmd_update) - 1);
 
+		if (opts_vztt->flags & OPT_VZTT_TEST)
+			strncat(cmd_update, testyum, len_update -
+				strlen(cmd_update)-1);
+
 		vztt_logger(1, 0, "RPM package(s) is (are) not found, running %s", cmd_update);
 
 		if ((rc = execv_cmd(cmd_update, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
@@ -1184,15 +1193,22 @@ static int do_template(
 		goto cleanup;
 	}
 
-	strncpy(cmd, rpmu, len);
-	if (opts_vztt->flags & OPT_VZTT_FORCE)
+	if (opts_vztt->flags & OPT_VZTT_FORCE) {
+		strncpy(cmd, rpmu, len);
 		strncat(cmd, force, len-strlen(cmd)-1);
+		if ((opts_vztt->flags & OPT_VZTT_QUIET) == 0)
+			strncat(cmd, verbose, len-strlen(cmd)-1);
+		if (opts_vztt->flags & OPT_VZTT_TEST)
+			strncat(cmd, test, len-strlen(cmd)-1);
+	} else {
+		strncpy(cmd, YUM, len);
+		strncat(cmd, update_install, len-strlen(cmd)-1);
+		if (opts_vztt->flags & OPT_VZTT_TEST)
+			strncat(cmd, testyum, len-strlen(cmd)-1);
+	}
+
 	if (opts_vztt->flags & OPT_VZTT_QUIET)
 		strncat(cmd, quiet, len-strlen(cmd)-1);
-	else
-		strncat(cmd, verbose, len-strlen(cmd)-1);
-	if (opts_vztt->flags & OPT_VZTT_TEST)
-		strncat(cmd, test, len-strlen(cmd)-1);
 	for (i = 0; rpmsi[i] && (i < szi); i++) {
 		strncat(cmd, " ", len-strlen(cmd)-1);
 		strncat(cmd, rpmsi[i], len-strlen(cmd)-1);
