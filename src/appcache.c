@@ -693,11 +693,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 	if ((rc = pm_set_veformat(to, veformat)))
 		goto cleanup_5;
 
-	snprintf(cmd, sizeof(cmd), \
-		VZCTL " --skiplock %s start %s --wait --skip_ve_setup",
-		opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-	vztt_logger(2, 0, "execv(\"%s\")", cmd);
-	if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), -1) < 0))
+	if ((rc = do_vzctl("start", opts_vztt->debug < 4, 0, 1, ctid, -1, 1) < 0))
 	{
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
@@ -741,9 +737,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
-	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",\
-			ctid);
-	if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
 		goto cleanup_5;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -824,9 +818,7 @@ cleanup_7:
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
 cleanup_6:
-	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",
-			ctid);
-	if (execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1))
+	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
 		vztt_logger(1, 0, "Failed to stop Container: %s", ctid);
 
 cleanup_5:
@@ -1157,11 +1149,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 	if ((rc = pm_set_veformat(to, veformat)))
 		goto cleanup_5;
 
-	snprintf(cmd, sizeof(cmd), \
-		VZCTL " --skiplock %s start %s --wait --skip_ve_setup",
-		opts_vztt->debug < 4 ? "--quiet" : "--verbose", ctid);
-	vztt_logger(2, 0, "execv(\"%s\")", cmd);
-	if ((rc = execv_cmd(cmd, (opts_vztt->debug < 4), -1) < 0))
+	if ((rc = do_vzctl("start", opts_vztt->debug < 4, 0, 1, ctid, -1, 1) < 0))
 	{
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
@@ -1233,9 +1221,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
-	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",\
-			ctid);
-	if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
 		goto cleanup_4;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -1314,9 +1300,7 @@ cleanup_7:
 	string_list_clean(&environment);
 
 cleanup_6:
-	snprintf(cmd, sizeof(cmd), VZCTL " --skiplock --quiet stop %s --fast",
-			ctid);
-	if (execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1))
+	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
 		vztt_logger(1, 0, "Failed to stop Container: %s", ctid);
 
 cleanup_5:

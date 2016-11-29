@@ -1080,22 +1080,15 @@ static int do_template(
 		struct options_vztt *opts_vztt,
 		char ***arr)
 {
-	int rc = 0;
-	size_t i, len, len_update, a = 0, szi = sz;
-	char *cmd = NULL;
-	char *cmd_update = NULL;
-	char *update_install = " install -y";
-	char *update_update = " update -y";
-	char *rpmu = RPMBIN " -U";
-	char *force = " --force --nodeps";
-	char *quiet = " --quiet", *verbose = " -hv", *test = " --test",
-		*testyum = " --assumeno";
+	int rc = 0, cnt;
+	size_t i, a = 0, szi = sz;
 	struct string_list ls;
 	struct string_list existed;
 	struct string_list packages_list;
 	struct string_list_el *s;
 	char *rpmsi[szi];
 	char progress_stage[PATH_MAX];
+	char *argv[255]; // Should be enough
 
 	if (action == VZPKG_INSTALL)
 		snprintf(progress_stage, sizeof(progress_stage),
@@ -1109,27 +1102,11 @@ static int do_template(
 	string_list_init(&existed);
 	string_list_init(&packages_list);
 
-	len_update = strlen(YUM) + strlen(update_install) + 1;
-	if (opts_vztt->flags & OPT_VZTT_FORCE)
-		len = strlen(rpmu) + strlen(force) + 1;
-	else
-		len = len_update;
-	if (opts_vztt->flags & OPT_VZTT_QUIET) {
-		len += strlen(quiet);
-		len_update += strlen(quiet);
-	} else {
-		len += strlen(verbose);
-	}
-	if (opts_vztt->flags & OPT_VZTT_TEST) {
-		len += (opts_vztt->flags & OPT_VZTT_FORCE ?
-			strlen(test) : strlen(testyum));
-		len_update += strlen(testyum);
-	}
 	for (i = 0; rpms[i] && (i < sz); i++) {
 		if ((rc = check_ez_rpm(rpms[i], opts_vztt->flags, &ls, &existed))) {
 			if (rc == VZT_FILE_NFOUND &&
 				(opts_vztt->flags & OPT_VZTT_USE_VZUP2DATE)) {
-				len_update += check_vzup2date_eztmpl(&packages_list,
+				check_vzup2date_eztmpl(&packages_list,
 					&ls, opts_vztt, rpms[i]);
 				szi--;
 			} else {
@@ -1137,7 +1114,6 @@ static int do_template(
 			}
 		} else {
 			rpmsi[a] = rpms[i];
-			len += strlen(rpms[i]) + 1;
 			a++;
 		}
 	}
@@ -1154,68 +1130,65 @@ static int do_template(
 	}
 
 	if (!string_list_empty(&packages_list)) {
-		if ((cmd_update = (char *)malloc(len_update + 1)) == NULL) {
-			vztt_logger(0, errno, "Cannot alloc memory");
-			rc = VZT_CANT_ALLOC_MEM;
-			goto cleanup;
-		}
+		argv[0] = YUM;
+		argv[1] = action == VZPKG_INSTALL ? "install" : "update";
+		argv[2] = "-y";
+		cnt = 3;
 
-		strncpy(cmd_update, YUM, len_update);
-		strncat(cmd_update,
-			action == VZPKG_INSTALL?
-				update_install:
-				update_update,
-			len_update - strlen(cmd_update) - 1);
 		string_list_for_each(&packages_list, s) {
-			strncat(cmd_update, " ", len_update -
-                                strlen(cmd_update) - 1);
-			strncat(cmd_update, s->s, len_update -
-				strlen(cmd_update) - 1);
+			argv[cnt] = s->s;
+			cnt++;
 		}
+		if (opts_vztt->flags & OPT_VZTT_QUIET) {
+			argv[cnt] = "--quiet";
+			cnt++;
+		}
+		if (opts_vztt->flags & OPT_VZTT_TEST) {
+			argv[cnt] = "--assumeno";
+			cnt++;
+		}
+		argv[cnt] = 0;
 
-		if (opts_vztt->flags & OPT_VZTT_QUIET)
-			strncat(cmd_update, quiet, len_update -
-                                strlen(cmd_update) - 1);
+		vztt_logger(1, 0, "RPM package(s) is (are) not found, running %s %s", YUM, argv[1]);
 
-		if (opts_vztt->flags & OPT_VZTT_TEST)
-			strncat(cmd_update, testyum, len_update -
-				strlen(cmd_update)-1);
-
-		vztt_logger(1, 0, "RPM package(s) is (are) not found, running %s", cmd_update);
-
-		if ((rc = execv_cmd(cmd_update, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+		if ((rc = execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			goto cleanup;
-	}
-
-	if ((cmd = (char *)malloc(len + 1)) == NULL) {
-		vztt_logger(0, errno, "Cannot alloc memory");
-		rc = VZT_CANT_ALLOC_MEM;
-		goto cleanup;
 	}
 
 	if (opts_vztt->flags & OPT_VZTT_FORCE) {
-		strncpy(cmd, rpmu, len);
-		strncat(cmd, force, len-strlen(cmd)-1);
-		if ((opts_vztt->flags & OPT_VZTT_QUIET) == 0)
-			strncat(cmd, verbose, len-strlen(cmd)-1);
-		if (opts_vztt->flags & OPT_VZTT_TEST)
-			strncat(cmd, test, len-strlen(cmd)-1);
+		argv[0] = RPMBIN;
+		argv[1] = "-U";
+		argv[2] = "--force";
+		argv[3] = "--nodeps";
+		argv[4] = opts_vztt->flags & OPT_VZTT_QUIET ? "--quiet" : "-hv";
+		cnt = 5;
+		if (opts_vztt->flags & OPT_VZTT_TEST) {
+			argv[cnt] = "--test";
+			cnt++;
+		}
 	} else {
-		strncpy(cmd, YUM, len);
-		strncat(cmd, update_install, len-strlen(cmd)-1);
-		if (opts_vztt->flags & OPT_VZTT_TEST)
-			strncat(cmd, testyum, len-strlen(cmd)-1);
+		argv[0] = YUM;
+		argv[1] = "install";
+		cnt = 2;
+		if (opts_vztt->flags & OPT_VZTT_QUIET) {
+			argv[cnt] = "--quiet";
+			cnt++;
+		}
+		if (opts_vztt->flags & OPT_VZTT_TEST) {
+			argv[cnt] = "--assumeno";
+			cnt++;
+		}
 	}
 
-	if (opts_vztt->flags & OPT_VZTT_QUIET)
-		strncat(cmd, quiet, len-strlen(cmd)-1);
 	for (i = 0; rpmsi[i] && (i < szi); i++) {
-		strncat(cmd, " ", len-strlen(cmd)-1);
-		strncat(cmd, rpmsi[i], len-strlen(cmd)-1);
+		argv[cnt] = rpmsi[i];
+		cnt++;
 	}
+
+	argv[cnt] = 0;
 
 	if (szi)
-		if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+		if ((rc = execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			goto cleanup;
 
 	/* copy string list <ls> to string array <*a> */
@@ -1223,12 +1196,6 @@ static int do_template(
 		rc = string_list_to_array(&ls, arr);
 
 cleanup:
-	if (cmd)
-		free((void *)cmd);
-
-	if (cmd_update)
-		free((void *)cmd_update);
-
 	string_list_clean(&ls);
 	string_list_clean(&existed);
 	string_list_clean(&packages_list);
@@ -1459,7 +1426,6 @@ int vztt2_remove_os_template(char *arg, struct options_vztt *opts_vztt)
 {
 	int rc = 0;
 	char *ostemplate;
-	char cmd[PATH_MAX+100];
 	char *rpm = NULL;
 	void *lockdata;
 	int shared = 0;
@@ -1531,12 +1497,9 @@ int vztt2_remove_os_template(char *arg, struct options_vztt *opts_vztt)
 		goto cleanup_2;
 
 	/* remove rpm, provides this template */
-	if (tmpl_get_rpm((struct tmpl *)tmpl->os, &rpm) == 0) {
-		snprintf(cmd, sizeof(cmd), RPMBIN " -e%s%s %s", \
-			(opts_vztt->flags & OPT_VZTT_FORCE) ? " --nodeps" : "", \
-			(opts_vztt->flags & OPT_VZTT_TEST) ? " --test" : "", rpm);
-		execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
-	}
+	if (tmpl_get_rpm((struct tmpl *)tmpl->os, &rpm) == 0)
+		rpm_remove_execv_cmd(rpm, opts_vztt);
+
 	if (!(opts_vztt->flags & OPT_VZTT_TEST)) {
 		if (tmpl->os == (struct os_tmpl *)tmpl->base) {
 			/* ok, we removed base template just now,
@@ -1647,7 +1610,6 @@ int vztt_remove_app_template(char *app, struct options *opts)
 int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 {
 	int rc = 0;
-	char cmd[PATH_MAX+100];
 	char *rpm = NULL;
 	void *lockdata;
 	int shared = 0;
@@ -1761,12 +1723,9 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 		goto cleanup_2;
 
 	/* remove rpm, provides this template */
-	if (tmpl_get_rpm((struct tmpl *)a->tmpl, &rpm) == 0) {
-		snprintf(cmd, sizeof(cmd), RPMBIN " -e%s%s %s", \
-			(opts_vztt->flags & OPT_VZTT_FORCE) ? " --nodeps" : "", \
-			(opts_vztt->flags & OPT_VZTT_TEST) ? " --test" : "", rpm);
-		execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
-	}
+	if (tmpl_get_rpm((struct tmpl *)a->tmpl, &rpm) == 0)
+		rpm_remove_execv_cmd(rpm, opts_vztt);
+
 	if (!(opts_vztt->flags & OPT_VZTT_TEST)) {
 		if (access(a->tmpl->confdir, F_OK) == 0)
 			remove_directory(a->tmpl->confdir);

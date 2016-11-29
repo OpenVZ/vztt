@@ -597,18 +597,14 @@ int tmplset_install(
 		    " %s", *ostemplate == '.' ? ostemplate+1 : ostemplate);
 	}
 
-	snprintf(cmd, sizeof(cmd),  YUM " install -y %s-ez", \
-	    tmpl_string);
-	snprintf(cmd_noarch, sizeof(cmd),  YUM " install -y %s-x86_64-ez", \
-	    tmpl_string);
+	snprintf(cmd, sizeof(cmd),  "%s-ez", tmpl_string);
+	snprintf(cmd_noarch, sizeof(cmd_noarch), "%s-x86_64-ez", tmpl_string);
 	vztt_logger(1, 0, "Some template(s)%s is not found, " \
 	    "running " YUM " to install it...", tmpl_string);
 
-	if ((rc = execv_cmd(cmd, (flags & OPT_VZTT_QUIET), 1)) && \
-		(rc = execv_cmd(cmd_noarch, (flags & OPT_VZTT_QUIET), 1)))
-	{
-		vztt_logger(0, 0, "Failed to install the template(s):%s",
-			tmpl_string);
+	if ((rc = yum_install_execv_cmd(cmd, (flags & OPT_VZTT_QUIET), 1)) && 
+		(rc = yum_install_execv_cmd(cmd_noarch, (flags & OPT_VZTT_QUIET), 1))) {
+		vztt_logger(0, 0, "Failed to install the template(s):%s", tmpl_string);
 		return rc;
 	}
 
@@ -646,8 +642,8 @@ int check_ovz_cache(
 		char *ostemplate,
 		int just_check)
 {
-	char cmd[PATH_MAX+1];
 	char cache_name[PATH_MAX+1];
+	char *argv[3];
 	int rc;
 
 	snprintf(cache_name, sizeof(cache_name), "%s/cache/%s.tar.gz", \
@@ -660,9 +656,11 @@ int check_ovz_cache(
 	if (access(cache_name, F_OK) == 0) {
 		if (just_check)
 			return 0;
-		snprintf(cmd, sizeof(cmd), OVZ_CONVERT " %s", cache_name);
+		argv[0] = OVZ_CONVERT;
+		argv[1] = cache_name;
+		argv[2] = 0;
 
-		if ((rc = execv_cmd(cmd, 0, 1))) {
+		if ((rc = execv_cmd(argv, 0, 1))) {
 			vztt_logger(0, 0, "Failed to convert the precreated cache %s",
 						cache_name);
 			return rc;

@@ -166,7 +166,13 @@ int move_file(const char *dst, const char *src);
 /*  execute command and check exit code */
 int exec_cmd(char *cmd, int quiet);
 /*  execute command by execv and check exit code */
-int execv_cmd(char *cmd, int quiet, int mod);
+int execv_cmd(char **argv, int quiet, int mod);
+/* Log execv call */
+void execv_cmd_logger(int log_level, int err_num, char **argv);
+int yum_install_execv_cmd(char *pkg, int quiet, int mod);
+int do_vzctl(char *cmd, int quiet, int fast, int wait,
+	char *ctid, int mod, int logger);
+int rpm_remove_execv_cmd(char *rpm, struct options_vztt *opts_vztt);
 
 /* cut off leading and tailing blank symbol from string */
 char *cut_off_string(char *str);
