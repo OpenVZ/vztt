@@ -643,7 +643,7 @@ int check_ovz_cache(
 		int just_check)
 {
 	char cache_name[PATH_MAX+1];
-	char *argv[3];
+	char *argv[] = {OVZ_CONVERT, cache_name, NULL};
 	int rc;
 
 	snprintf(cache_name, sizeof(cache_name), "%s/cache/%s.tar.gz", \
@@ -656,9 +656,6 @@ int check_ovz_cache(
 	if (access(cache_name, F_OK) == 0) {
 		if (just_check)
 			return 0;
-		argv[0] = OVZ_CONVERT;
-		argv[1] = cache_name;
-		argv[2] = 0;
 
 		if ((rc = execv_cmd(argv, 0, 1))) {
 			vztt_logger(0, 0, "Failed to convert the precreated cache %s",

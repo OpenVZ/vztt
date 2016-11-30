@@ -301,7 +301,7 @@ int vztt2_upgrade(
 		argv[4] = ctid;
 		argv[5] = "--osrelease";
 		argv[6] = t_tmpl->base->osrelease;
-		argv[7] = 0;
+		argv[7] = NULL;
 		execv_cmd_logger(2, 0, argv);
 		if ((rc = execv_cmd(argv, 1, 1))) {
 			goto cleanup_2;
@@ -365,7 +365,8 @@ int vztt2_upgrade(
 		goto cleanup_4;
 
 	/* stop VPS */
-	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 1)))
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET |
+		DO_VZCTL_FAST | DO_VZCTL_LOGGER)))
 		goto cleanup_4;
 
 	/* try to fix rpm database */
@@ -388,7 +389,8 @@ int vztt2_upgrade(
 		goto cleanup_4;
 
 	/* start VPS */
-	if ((rc = do_vzctl("start", 1, 0, 1, ctid, 1, 1)))
+	if ((rc = do_vzctl("start", ctid, 1, DO_VZCTL_QUIET |
+		DO_VZCTL_WAIT | DO_VZCTL_LOGGER)))
 		goto cleanup_4;
 
 	/* Call post-upgrade script */
@@ -397,7 +399,8 @@ int vztt2_upgrade(
 		goto cleanup_4;
 
 	/* Restart VPS */
-	rc = do_vzctl("restart", 1, 0, 1, ctid, 1, 1);
+	rc = do_vzctl("restart", ctid, 1, DO_VZCTL_QUIET |
+		DO_VZCTL_WAIT | DO_VZCTL_LOGGER);
 
 cleanup_4:
 	tmpl_unlock(lockdata, opts_vztt->flags);

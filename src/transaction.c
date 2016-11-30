@@ -1064,13 +1064,15 @@ int pm_get_installed_pkg_from_ve(
 
 	if (!(ve_status.mask & (ENV_STATUS_RUNNING | ENV_STATUS_MOUNTED))) {
 		/* CT is not mounted or running - will mount it temporary */
-		if ((rc = do_vzctl("mount", pm->quiet, 0, 0, (char *) ctid, 1, 0)))
+		if ((rc = do_vzctl("mount", (char *) ctid, 1,
+			pm->quiet ? DO_VZCTL_QUIET : DO_VZCTL_NONE)))
 			return rc;
 		mounted = 1;
 	}
 	rc = pm->pm_get_install_pkg(pm, installed);
 	if (mounted)
-		do_vzctl("umount", pm->quiet, 0, 0, (char *) ctid, 1, 0);
+		do_vzctl("umount", (char *) ctid, 1,
+		pm->quiet ? DO_VZCTL_QUIET : DO_VZCTL_NONE);
 	return rc;
 }
 

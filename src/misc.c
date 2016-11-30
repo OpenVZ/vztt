@@ -1071,6 +1071,7 @@ static int check_vzup2date_eztmpl(
 	return (strlen(name) + 1);
 }
 
+#define EXECV_CMD_MAX_ARGS 255 // Should be enough
 /* install/update template as rpm package <rpm> on HN */
 /* TODO: get ostemplate name from rpm and lock ostemplate */
 static int do_template(
@@ -1080,7 +1081,7 @@ static int do_template(
 		struct options_vztt *opts_vztt,
 		char ***arr)
 {
-	int rc = 0, cnt;
+	int rc = 0, cnt = 0;
 	size_t i, a = 0, szi = sz;
 	struct string_list ls;
 	struct string_list existed;
@@ -1088,7 +1089,7 @@ static int do_template(
 	struct string_list_el *s;
 	char *rpmsi[szi];
 	char progress_stage[PATH_MAX];
-	char *argv[255]; // Should be enough
+	char *argv[EXECV_CMD_MAX_ARGS];
 
 	if (action == VZPKG_INSTALL)
 		snprintf(progress_stage, sizeof(progress_stage),
@@ -1130,62 +1131,53 @@ static int do_template(
 	}
 
 	if (!string_list_empty(&packages_list)) {
-		argv[0] = YUM;
-		argv[1] = action == VZPKG_INSTALL ? "install" : "update";
-		argv[2] = "-y";
-		cnt = 3;
+		argv[cnt++] = YUM;
+		argv[cnt++] = action == VZPKG_INSTALL ? "install" : "update";
+		argv[cnt++] = "-y";
 
 		string_list_for_each(&packages_list, s) {
-			argv[cnt] = s->s;
-			cnt++;
+			if (cnt > EXECV_CMD_MAX_ARGS - 3)
+				return vztt_error(VZT_INTERNAL, 0,
+					"Too many arguments");
+			argv[cnt++] = s->s;
 		}
-		if (opts_vztt->flags & OPT_VZTT_QUIET) {
-			argv[cnt] = "--quiet";
-			cnt++;
-		}
-		if (opts_vztt->flags & OPT_VZTT_TEST) {
-			argv[cnt] = "--assumeno";
-			cnt++;
-		}
-		argv[cnt] = 0;
+		if (opts_vztt->flags & OPT_VZTT_QUIET)
+			argv[cnt++] = "--quiet";
+		if (opts_vztt->flags & OPT_VZTT_TEST)
+			argv[cnt++] = "--assumeno";
+		argv[cnt++] = NULL;
 
-		vztt_logger(1, 0, "RPM package(s) is (are) not found, running %s %s", YUM, argv[1]);
+		vztt_logger(1, 0, "RPM package(s) is (are) not found, running %s %s", argv[0], argv[1]);
 
 		if ((rc = execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			goto cleanup;
 	}
 
 	if (opts_vztt->flags & OPT_VZTT_FORCE) {
-		argv[0] = RPMBIN;
-		argv[1] = "-U";
-		argv[2] = "--force";
-		argv[3] = "--nodeps";
-		argv[4] = opts_vztt->flags & OPT_VZTT_QUIET ? "--quiet" : "-hv";
-		cnt = 5;
-		if (opts_vztt->flags & OPT_VZTT_TEST) {
-			argv[cnt] = "--test";
-			cnt++;
-		}
+		argv[cnt++] = RPMBIN;
+		argv[cnt++] = "-U";
+		argv[cnt++] = "--force";
+		argv[cnt++] = "--nodeps";
+		argv[cnt++] = opts_vztt->flags & OPT_VZTT_QUIET ? "--quiet" : "-hv";
+		if (opts_vztt->flags & OPT_VZTT_TEST)
+			argv[cnt++] = "--test";
 	} else {
-		argv[0] = YUM;
-		argv[1] = "install";
-		cnt = 2;
-		if (opts_vztt->flags & OPT_VZTT_QUIET) {
-			argv[cnt] = "--quiet";
-			cnt++;
-		}
-		if (opts_vztt->flags & OPT_VZTT_TEST) {
-			argv[cnt] = "--assumeno";
-			cnt++;
-		}
+		argv[cnt++] = YUM;
+		argv[cnt++] = "install";
+		if (opts_vztt->flags & OPT_VZTT_QUIET)
+			argv[cnt++] = "--quiet";
+		if (opts_vztt->flags & OPT_VZTT_TEST)
+			argv[cnt++] = "--assumeno";
 	}
 
 	for (i = 0; rpmsi[i] && (i < szi); i++) {
-		argv[cnt] = rpmsi[i];
-		cnt++;
+		if (cnt > EXECV_CMD_MAX_ARGS - 6)
+			return vztt_error(VZT_INTERNAL, 0,
+				"Too many arguments");
+		argv[cnt++] = rpmsi[i];
 	}
 
-	argv[cnt] = 0;
+	argv[cnt++] = NULL;
 
 	if (szi)
 		if ((rc = execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))

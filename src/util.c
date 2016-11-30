@@ -1390,47 +1390,42 @@ int exec_cmd(char *cmd, int quiet)
 	return 0;
 }
 
-void execv_cmd_logger(int log_level, int err_num, char **argv) {
+void execv_cmd_logger(int log_level, int err_num, char **argv)
+{
 	char buf[STRSIZ];
-	int a = 0, i = 0;
-
-	buf[0] = 0;
-
-	while (argv[a] && i < STRSIZ) {
-		strncat(buf, argv[a], sizeof(buf) - i);
-		strncat(buf, " ", 1);
-		i += strlen(argv[a]) + 1;
-		a++;
+	char *s = buf;
+	char *e = buf + sizeof(buf) - 1;
+	int i = 0;
+	
+	for (i= 0; argv[i] != NULL; i++) {
+		s += snprintf(s, e - s, "%s ", argv[i]);
+		if (s >= e)
+			break;
 	}
 
 	vztt_logger(log_level, err_num, "execv(\"%s\")", buf);
 }
 
-int do_vzctl(char *cmd, int quiet, int fast, int wait,
-	char *ctid, int mod, int logger) {
+int do_vzctl(char *cmd, char *ctid, int mod, int mask)
+{
 	char *argv[8];
-	int i = 5;
+	int i = 0;
 
-	argv[0] = VZCTL;
-	argv[1] = "--skiplock";
-	argv[2] = quiet ? "--quiet" : "--verbose";
-	argv[3] = cmd;
-	argv[4] = ctid;
-	if (strcmp("start", cmd) == 0 || strcmp("mount", cmd) == 0) {
-		argv[i] = "--skip_ve_setup";
-		i++;
-	} else if (strcmp("stop", cmd) == 0 && fast) {
-		argv[i] = "--fast";
-		i++;
-	}
-	if (wait) {
-		argv[i] = "--wait";
-		i++;
-	}
-	argv[i] = 0;
-	if (logger)
+	argv[i++] = VZCTL;
+	argv[i++] = "--skiplock";
+	argv[i++] = mask & DO_VZCTL_QUIET ? "--quiet" : "--verbose";
+	argv[i++] = cmd;
+	argv[i++] = ctid;
+	if (strcmp("start", cmd) == 0 || strcmp("mount", cmd) == 0)
+		argv[i++] = "--skip_ve_setup";
+	else if (strcmp("stop", cmd) == 0 && mask & DO_VZCTL_FAST)
+		argv[i++] = "--fast";
+	if (mask & DO_VZCTL_WAIT)
+		argv[i++] = "--wait";
+	argv[i++] = NULL;
+	if (mask & DO_VZCTL_LOGGER)
 		execv_cmd_logger(2, 0, argv);
-	return execv_cmd(argv, quiet, mod);
+	return execv_cmd(argv, mask & DO_VZCTL_QUIET, mod);
 }
 
 /* execute command and check exit code */
@@ -1497,34 +1492,23 @@ int execv_cmd(char **argv, int quiet, int mod)
 }
 
 int yum_install_execv_cmd(char *pkg, int quiet, int mod) {
-	char *argv[5];
-
-	argv[0] = YUM;
-	argv[1] = "install";
-	argv[2] = "-y";
-	argv[3] = pkg;
-	argv[4] = 0;
+	char *argv[] = {YUM, "install", "-y", pkg, NULL};
 
 	return execv_cmd(argv, quiet, mod);
 }
 
 int rpm_remove_execv_cmd(char *rpm, struct options_vztt *opts_vztt) {
 	char *argv[6];
-	int i;
+	int i = 0;
 
-	argv[0] = RPMBIN;
-	argv[1] = "-e";
-	i = 2;
-	if (opts_vztt->flags & OPT_VZTT_FORCE) {
-		argv[i] = "--nodeps";
-		i++;
-	}
-	if (opts_vztt->flags & OPT_VZTT_TEST) {
-		argv[i] = "--test";
-		i++;
-	}
-	argv[i] = rpm;
-	argv[i+1] = 0;
+	argv[i++] = RPMBIN;
+	argv[i++] = "-e";
+	if (opts_vztt->flags & OPT_VZTT_FORCE)
+		argv[i++] = "--nodeps";
+	if (opts_vztt->flags & OPT_VZTT_TEST)
+		argv[i++] = "--test";
+	argv[i++] = rpm;
+	argv[i++] = NULL;
 	return execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
 }
 

@@ -389,7 +389,9 @@ static int create_cache(
 	}
 
 	/* cache will created only in vz3 layout */
-	if ((rc = do_vzctl("mount", opts_vztt->debug < 4, 0, 0, ctid, -1, 1) < 0)) {
+	if ((rc = do_vzctl("mount", ctid, -1,
+		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
+		DO_VZCTL_LOGGER) < 0)) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_3;
 	}
@@ -404,7 +406,7 @@ static int create_cache(
 		argv[0] = PFCACHE_BIN;
 		argv[1] = "set";
 		argv[2] = ve_root;
-		argv[3] = 0;
+		argv[3] = NULL;
 		if (execv_cmd(argv, 1, 1))
 			goto cleanup_4;
 	}
@@ -439,7 +441,9 @@ static int create_cache(
 		opts_vztt->progress_fd)))
 		goto cleanup_5;
 
-	if ((rc = do_vzctl("start", opts_vztt->debug < 4, 0, 0, ctid, -1, 1) < 0)) {
+	if ((rc = do_vzctl("start", ctid, -1,
+		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
+		DO_VZCTL_LOGGER) < 0)) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
 	}
@@ -468,8 +472,12 @@ static int create_cache(
 			goto cleanup_6;
 
 		/* Restart VPS */
-		if ((rc = do_vzctl("stop", opts_vztt->debug < 4, 1, 0, ctid, 1, 1)) ||
-			(rc = do_vzctl("start", opts_vztt->debug < 4, 0, 0, ctid, 1, 1))) {
+		if ((rc = do_vzctl("stop", ctid, 1,
+			(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
+			DO_VZCTL_FAST | DO_VZCTL_LOGGER)) ||
+			(rc = do_vzctl("start", ctid, 1,
+			(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
+			DO_VZCTL_LOGGER))) {
 			goto cleanup_6;
 		}
 
@@ -493,7 +501,7 @@ static int create_cache(
 		argv[0] = PFCACHE_BIN;
 		argv[1] = "clear";
 		argv[2] = ve_root;
-		argv[3] = 0;
+		argv[3] = NULL;
 		execv_cmd_logger(2, 0, argv);
 		if (execv_cmd(argv, 1, 1))
 			goto cleanup_6;
@@ -524,7 +532,7 @@ static int create_cache(
 
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
-	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST)))
 		goto cleanup_4;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -561,7 +569,7 @@ static int create_cache(
 		argv[0] = "/bin/mv";
 		argv[1] = ve_private_template;
 		argv[2] = ploop_dir;
-		argv[3] = 0;
+		argv[3] = NULL;
 		if ((rc = execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			vztt_logger(0, 0, "Failed to move 'template' directory");
 		else
@@ -600,12 +608,12 @@ static int create_cache(
 	goto cleanup_2;
 cleanup_6:
 	tmpl_unlock(lockdata, opts_vztt->flags);
-	do_vzctl("stop", 1, 1, 0, ctid, 1, 0);
+	do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST);
 	goto cleanup_3;
 cleanup_5:
 	tmpl_unlock(lockdata, opts_vztt->flags);
 cleanup_4:
-	do_vzctl("umount", 1, 0, 0, ctid, 1, 0);
+	do_vzctl("umount", ctid, 1, DO_VZCTL_QUIET);
 
 cleanup_3:
 	if (ploop_dir)
@@ -884,7 +892,9 @@ int update_cache(
 	if ((rc = pm_set_veformat(to, veformat)))
 		goto cleanup_3;
 
-	if ((rc = do_vzctl("start", opts_vztt->debug < 4, 0, 0, ctid, -1, 1) < 0)) {
+	if ((rc = do_vzctl("start", ctid, -1,
+		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
+		DO_VZCTL_LOGGER) < 0)) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_3;
 	}
@@ -942,7 +952,7 @@ int update_cache(
 		goto cleanup_5;
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
-	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST)))
 		goto cleanup_3;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -1007,7 +1017,7 @@ int update_cache(
 cleanup_5:
 	tmpl_unlock(lockdata, opts_vztt->flags);
 cleanup_4:
-	do_vzctl("stop", 1, 1, 0, ctid, 1, 0);
+	do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST);
 cleanup_3:
 	if (ploop_dir)
 		umount_ploop(ploop_dir, opts_vztt);

@@ -693,7 +693,9 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 	if ((rc = pm_set_veformat(to, veformat)))
 		goto cleanup_5;
 
-	if ((rc = do_vzctl("start", opts_vztt->debug < 4, 0, 1, ctid, -1, 1) < 0))
+	if ((rc = do_vzctl("start", ctid, -1,
+		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
+		DO_VZCTL_WAIT | DO_VZCTL_LOGGER) < 0))
 	{
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
@@ -737,7 +739,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
-	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST)))
 		goto cleanup_5;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -818,7 +820,7 @@ cleanup_7:
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
 cleanup_6:
-	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST)))
 		vztt_logger(1, 0, "Failed to stop Container: %s", ctid);
 
 cleanup_5:
@@ -1149,7 +1151,9 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 	if ((rc = pm_set_veformat(to, veformat)))
 		goto cleanup_5;
 
-	if ((rc = do_vzctl("start", opts_vztt->debug < 4, 0, 1, ctid, -1, 1) < 0))
+	if ((rc = do_vzctl("start", ctid, -1,
+		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
+		DO_VZCTL_WAIT | DO_VZCTL_LOGGER) < 0))
 	{
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
@@ -1221,7 +1225,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
-	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST)))
 		goto cleanup_4;
 
 	tmplset_update_privdir(tmpl, ve_private);
@@ -1300,7 +1304,7 @@ cleanup_7:
 	string_list_clean(&environment);
 
 cleanup_6:
-	if ((rc = do_vzctl("stop", 1, 1, 0, ctid, 1, 0)))
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET | DO_VZCTL_FAST)))
 		vztt_logger(1, 0, "Failed to stop Container: %s", ctid);
 
 cleanup_5:

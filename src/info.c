@@ -138,13 +138,13 @@ static int get_ve_pkg_info(
 
 	if (!(ve_status.mask & (ENV_STATUS_RUNNING | ENV_STATUS_MOUNTED))) {
 		/* CT is not mounted or running - will mount it temporary */
-		if ((rc = do_vzctl("mount", 1, 0, 0, ctid, 1, 0)))
+		if ((rc = do_vzctl("mount", ctid, 1, DO_VZCTL_QUIET)))
 			goto cleanup_1;
 		mounted = 1;
 	}
 	rc = to->pm_ve_get_info(to, package, pi);
 	if (mounted)
-		do_vzctl("umount", 1, 0, 0, ctid, 1, 0);
+		do_vzctl("umount", ctid, 1, DO_VZCTL_QUIET);
 
 cleanup_2:
 	pm_clean(to);
