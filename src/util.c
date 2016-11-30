@@ -1491,13 +1491,15 @@ int execv_cmd(char **argv, int quiet, int mod)
 	return rc;
 }
 
-int yum_install_execv_cmd(char *pkg, int quiet, int mod) {
+int yum_install_execv_cmd(char *pkg, int quiet, int mod)
+{
 	char *argv[] = {YUM, "install", "-y", pkg, NULL};
 
 	return execv_cmd(argv, quiet, mod);
 }
 
-int rpm_remove_execv_cmd(char *rpm, struct options_vztt *opts_vztt) {
+int rpm_remove_execv_cmd(char *rpm, struct options_vztt *opts_vztt)
+{
 	char *argv[6];
 	int i = 0;
 
