@@ -84,7 +84,6 @@ static int create_cache(
 	void *lockdata, *velockdata, *cache_lockdata;
 	char vzfs[MAXVERSIONLEN];
 	int backup;
-	char *argv[4];
 
 	struct package_list installed;
 
@@ -403,11 +402,8 @@ static int create_cache(
 	if (ploop_dir) {
 		/* set 'trusted' xattr on CT root, let's kernel will calculate
 		   checksum for all files in CT (https://jira.sw.ru/browse/PSBM-10447) */
-		argv[0] = PFCACHE_BIN;
-		argv[1] = "set";
-		argv[2] = ve_root;
-		argv[3] = NULL;
-		if (execv_cmd(argv, 1, 1))
+		char *pfcache_set[] = {PFCACHE_BIN, "set", ve_root, NULL};
+		if (execv_cmd(pfcache_set, 1, 1))
 			goto cleanup_4;
 	}
 
@@ -498,12 +494,9 @@ static int create_cache(
 
 	if (ploop_dir) {
 		/* clear 'trusted' xattr for directories, missing in white list */
-		argv[0] = PFCACHE_BIN;
-		argv[1] = "clear";
-		argv[2] = ve_root;
-		argv[3] = NULL;
-		execv_cmd_logger(2, 0, argv);
-		if (execv_cmd(argv, 1, 1))
+		char *pfcache_clear[] = {PFCACHE_BIN, "clear", ve_root, NULL};
+		execv_cmd_logger(2, 0, pfcache_clear);
+		if (execv_cmd(pfcache_clear, 1, 1))
 			goto cleanup_6;
 	}
 
@@ -566,11 +559,8 @@ static int create_cache(
 		/* move 'templates' to directory with ploop device. it should be packed
 		 together with ploop */
 
-		argv[0] = "/bin/mv";
-		argv[1] = ve_private_template;
-		argv[2] = ploop_dir;
-		argv[3] = NULL;
-		if ((rc = execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+		char *move_dir[] = {"/bin/mv", ve_private_template, ploop_dir, NULL};
+		if ((rc = execv_cmd(move_dir, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			vztt_logger(0, 0, "Failed to move 'template' directory");
 		else
 		{

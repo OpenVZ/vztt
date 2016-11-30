@@ -205,7 +205,6 @@ int vztt2_upgrade(
 	char upgr_template[PATH_MAX];
 	ctid_t ctid;
 	void *lockdata, *velockdata;
-	char *argv[8];
 
 	struct ve_config vc;
 	struct global_config gc;
@@ -294,18 +293,12 @@ int vztt2_upgrade(
 	if (t_tmpl->base->osrelease &&
 		strlen(t_tmpl->base->osrelease)) {
 		/* Restart VPS */
-		argv[0] = VZCTL;
-		argv[1] = "--skiplock";
-		argv[2] = "--quiet";
-		argv[3] = "restart";
-		argv[4] = ctid;
-		argv[5] = "--osrelease";
-		argv[6] = t_tmpl->base->osrelease;
-		argv[7] = NULL;
-		execv_cmd_logger(2, 0, argv);
-		if ((rc = execv_cmd(argv, 1, 1))) {
+		char *set_osrelease[] = {VZCTL, "--skiplock", "--quiet",
+			"restart", ctid, "--osrelease",
+			t_tmpl->base->osrelease, NULL};
+		execv_cmd_logger(2, 0, set_osrelease);
+		if ((rc = execv_cmd(set_osrelease, 1, 1)))
 			goto cleanup_2;
-		}
 	}
 
 	if ((rc = tmplset_mark(t_tmpl, NULL, \

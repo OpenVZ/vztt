@@ -1153,6 +1153,7 @@ static int do_template(
 			goto cleanup;
 	}
 
+	cnt = 0;
 	if (opts_vztt->flags & OPT_VZTT_FORCE) {
 		argv[cnt++] = RPMBIN;
 		argv[cnt++] = "-U";
