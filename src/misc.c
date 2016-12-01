@@ -1081,7 +1081,7 @@ static int do_template(
 		struct options_vztt *opts_vztt,
 		char ***arr)
 {
-	int rc = 0, cnt = 0;
+	int rc = 0, cnt = 0, n;
 	size_t i, a = 0, szi = sz;
 	struct string_list ls;
 	struct string_list existed;
@@ -1135,8 +1135,9 @@ static int do_template(
 		argv[cnt++] = action == VZPKG_INSTALL ? "install" : "update";
 		argv[cnt++] = "-y";
 
+		n = EXECV_CMD_MAX_ARGS - cnt - 1;
 		string_list_for_each(&packages_list, s) {
-			if (cnt > EXECV_CMD_MAX_ARGS - 3)
+			if (cnt > n)
 				return vztt_error(VZT_INTERNAL, 0,
 					"Too many arguments");
 			argv[cnt++] = s->s;
@@ -1165,14 +1166,16 @@ static int do_template(
 	} else {
 		argv[cnt++] = YUM;
 		argv[cnt++] = "install";
+		argv[cnt++] = "-y";
 		if (opts_vztt->flags & OPT_VZTT_QUIET)
 			argv[cnt++] = "--quiet";
 		if (opts_vztt->flags & OPT_VZTT_TEST)
 			argv[cnt++] = "--assumeno";
 	}
 
+	n = EXECV_CMD_MAX_ARGS - cnt - 1;
 	for (i = 0; rpmsi[i] && (i < szi); i++) {
-		if (cnt > EXECV_CMD_MAX_ARGS - 6)
+		if (cnt > n)
 			return vztt_error(VZT_INTERNAL, 0,
 				"Too many arguments");
 		argv[cnt++] = rpmsi[i];
