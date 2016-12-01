@@ -96,7 +96,7 @@ cleanup_0:
 
 /* get VE package info */
 static int get_ve_pkg_info(
-	const char *ctid,
+	char *ctid,
 	const char *package,
 	struct global_config *gc,
 	struct vztt_config *tc,
@@ -104,7 +104,6 @@ static int get_ve_pkg_info(
 	struct pkg_info_list *pi)
 {
 	int rc = 0;
-	char buf[PATH_MAX+1];
 	vzctl_env_status_t ve_status;
 	int mounted = 0;
 
@@ -139,16 +138,14 @@ static int get_ve_pkg_info(
 
 	if (!(ve_status.mask & (ENV_STATUS_RUNNING | ENV_STATUS_MOUNTED))) {
 		/* CT is not mounted or running - will mount it temporary */
-		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet mount %s", ctid);
-		if ((rc = execv_cmd(buf, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+		if ((rc = do_vzctl("mount", ctid, 1, DO_VZCTL_QUIET)))
 			goto cleanup_1;
 		mounted = 1;
 	}
 	rc = to->pm_ve_get_info(to, package, pi);
-	if (mounted) {
-		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet umount %s", ctid);
-		execv_cmd(buf, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
-	}
+	if (mounted)
+		do_vzctl("umount", ctid, 1, DO_VZCTL_QUIET);
+
 cleanup_2:
 	pm_clean(to);
 cleanup_1:

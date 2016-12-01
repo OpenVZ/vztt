@@ -304,8 +304,7 @@ int pm_init(
 
 		if ((stat(path, &st)) || (!S_ISDIR(st.st_mode))) {
 			if (PACKAGE_MANAGER_IS_RPM(tmpl->base->package_manager)) {
-				snprintf(cmd, sizeof(cmd), \
-					YUM " install -y vzpkgenv%s",
+				snprintf(cmd, sizeof(cmd), "vzpkgenv%s",
 					tmpl->base->package_manager + strlen(RPM));
 				if (strlen(tmpl->base->osarch) == 3) {
 					pkgenv_suffix = strstr(cmd, "x86");
@@ -313,18 +312,14 @@ int pm_init(
 						*pkgenv_suffix = 0;
 				}
 			} else {
-				snprintf(cmd, sizeof(cmd), \
-					YUM " install -y vzpkgenvdeb%s", \
+				snprintf(cmd, sizeof(cmd), "vzpkgenvdeb%s", \
 					tmpl->base->package_manager + strlen(DPKG));
 			}
-
-			if (get_loglevel() > 0 && !(opts_vztt->flags & OPT_VZTT_QUIET))
-				strncat(cmd, " >/dev/null", sizeof(cmd) - strlen(cmd));
 
 			vztt_logger(1, 0, "Environment %s is not" \
 			    " found, running " YUM \
 			    " to install it...", path);
-			if ((rc = execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+			if ((rc = yum_install_execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			{
 				vztt_logger(0, 0, "Failed to install the environment " \
 					"package required for the template.");
@@ -1059,7 +1054,6 @@ int pm_get_installed_pkg_from_ve(
 		struct package_list *installed)
 {
 	int rc;
-	char buf[BUFSIZ];
 	vzctl_env_status_t ve_status;
 	int mounted = 0;
 
@@ -1070,16 +1064,15 @@ int pm_get_installed_pkg_from_ve(
 
 	if (!(ve_status.mask & (ENV_STATUS_RUNNING | ENV_STATUS_MOUNTED))) {
 		/* CT is not mounted or running - will mount it temporary */
-		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet mount %s", ctid);
-		if ((rc = execv_cmd(buf, pm->quiet, 1)))
+		if ((rc = do_vzctl("mount", (char *) ctid, 1,
+			pm->quiet ? DO_VZCTL_QUIET : DO_VZCTL_NONE)))
 			return rc;
 		mounted = 1;
 	}
 	rc = pm->pm_get_install_pkg(pm, installed);
-	if (mounted) {
-		snprintf(buf, sizeof(buf), VZCTL " --skiplock --quiet umount %s", ctid);
-		execv_cmd(buf, pm->quiet, 1);
-	}
+	if (mounted)
+		do_vzctl("umount", (char *) ctid, 1,
+		pm->quiet ? DO_VZCTL_QUIET : DO_VZCTL_NONE);
 	return rc;
 }
 

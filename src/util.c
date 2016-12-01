@@ -1390,28 +1390,51 @@ int exec_cmd(char *cmd, int quiet)
 	return 0;
 }
 
-/* execute command and check exit code */
-#define EXECV_CMD_MAX_ARGS 255 // Should be enough
-int execv_cmd(char *cmd, int quiet, int mod)
+void execv_cmd_logger(int log_level, int err_num, char **argv)
 {
-	int rc = 0, fd0 = -1, fd1 = -1, i = 1, sa_flags;
-	struct sigaction act_chld, act_quit, act_int;
-	char *argv[EXECV_CMD_MAX_ARGS];
-	pid_t child_pid;
-	int status = 0;
-	char *p = cmd;
-
-	argv[0] = p;
-	while ((p = strchr(p, ' ')) != NULL && i < EXECV_CMD_MAX_ARGS) {
-		*p = 0;
-		p++;
-		while (*p == ' ')
-			p++;
-		argv[i] = p;
-		i++;
+	char buf[STRSIZ];
+	char *s = buf;
+	char *e = buf + sizeof(buf) - 1;
+	int i = 0;
+	
+	for (i= 0; argv[i] != NULL; i++) {
+		s += snprintf(s, e - s, "%s ", argv[i]);
+		if (s >= e)
+			break;
 	}
 
-	argv[i] = '\0';
+	vztt_logger(log_level, err_num, "execv(\"%s\")", buf);
+}
+
+int do_vzctl(char *cmd, char *ctid, int mod, int mask)
+{
+	char *argv[8];
+	int i = 0;
+
+	argv[i++] = VZCTL;
+	argv[i++] = "--skiplock";
+	argv[i++] = mask & DO_VZCTL_QUIET ? "--quiet" : "--verbose";
+	argv[i++] = cmd;
+	argv[i++] = ctid;
+	if (strcmp("start", cmd) == 0 || strcmp("mount", cmd) == 0)
+		argv[i++] = "--skip_ve_setup";
+	else if (strcmp("stop", cmd) == 0 && mask & DO_VZCTL_FAST)
+		argv[i++] = "--fast";
+	if (mask & DO_VZCTL_WAIT)
+		argv[i++] = "--wait";
+	argv[i++] = NULL;
+	if (mask & DO_VZCTL_LOGGER)
+		execv_cmd_logger(2, 0, argv);
+	return execv_cmd(argv, mask & DO_VZCTL_QUIET, mod);
+}
+
+/* execute command and check exit code */
+int execv_cmd(char **argv, int quiet, int mod)
+{
+	int rc = 0, fd0 = -1, fd1 = -1, sa_flags;
+	struct sigaction act_chld, act_quit, act_int;
+	pid_t child_pid;
+	int status = 0;
 
 	sigaction(SIGCHLD, NULL, &act_chld);
 	sa_flags = act_chld.sa_flags;
@@ -1466,6 +1489,29 @@ int execv_cmd(char *cmd, int quiet, int mod)
 	sigaction(SIGCHLD, &act_chld, NULL);
 
 	return rc;
+}
+
+int yum_install_execv_cmd(char *pkg, int quiet, int mod)
+{
+	char *argv[] = {YUM, "install", "-y", pkg, NULL};
+
+	return execv_cmd(argv, quiet, mod);
+}
+
+int rpm_remove_execv_cmd(char *rpm, struct options_vztt *opts_vztt)
+{
+	char *argv[6];
+	int i = 0;
+
+	argv[i++] = RPMBIN;
+	argv[i++] = "-e";
+	if (opts_vztt->flags & OPT_VZTT_FORCE)
+		argv[i++] = "--nodeps";
+	if (opts_vztt->flags & OPT_VZTT_TEST)
+		argv[i++] = "--test";
+	argv[i++] = rpm;
+	argv[i++] = NULL;
+	return execv_cmd(argv, (opts_vztt->flags & OPT_VZTT_QUIET), 1);
 }
 
 /* get VE private VZFS root directory */
@@ -1738,10 +1784,9 @@ int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
 		if (stat(path, &st) == 0) {
 			/* Should check for prlcompress here */
 			if (ARCHIVES[i] == VZT_ARCHIVE_LZRW && stat(PRL_COMPRESS_FP, &st) != 0) {
-				snprintf(path, size, YUM " install -y " PRL_COMPRESS);
 				vztt_logger(1, 0, PRL_COMPRESS " utility is not found, " \
 				    "running " YUM " to install it...");
-				if (execv_cmd(path, 1, 1)) {
+				if (yum_install_execv_cmd(PRL_COMPRESS, 1, 1)) {
 					vztt_logger(0, 0, "Failed to install the " PRL_COMPRESS);
 					return -1;
 				}

@@ -202,7 +202,6 @@ int vztt2_upgrade(
 	struct package ***pkg_converted)
 {
 	int rc = 0;
-	char buf[PATH_MAX];
 	char upgr_template[PATH_MAX];
 	ctid_t ctid;
 	void *lockdata, *velockdata;
@@ -294,14 +293,12 @@ int vztt2_upgrade(
 	if (t_tmpl->base->osrelease &&
 		strlen(t_tmpl->base->osrelease)) {
 		/* Restart VPS */
-		snprintf(buf, sizeof(buf), "%s --skiplock --quiet restart %s " \
-		"--osrelease %s", VZCTL, ctid,
-		t_tmpl->base->osrelease);
-
-		vztt_logger(2, 0, buf);
-		if ((rc = execv_cmd(buf, 1, 1))) {
+		char *set_osrelease[] = {VZCTL, "--skiplock", "--quiet",
+			"restart", ctid, "--osrelease",
+			t_tmpl->base->osrelease, NULL};
+		execv_cmd_logger(2, 0, set_osrelease);
+		if ((rc = execv_cmd(set_osrelease, 1, 1)))
 			goto cleanup_2;
-		}
 	}
 
 	if ((rc = tmplset_mark(t_tmpl, NULL, \
@@ -361,12 +358,9 @@ int vztt2_upgrade(
 		goto cleanup_4;
 
 	/* stop VPS */
-	snprintf(buf, sizeof(buf), "%s --skiplock --quiet stop %s --fast", \
-				VZCTL, ctid);
-	vztt_logger(2, 0, buf);
-	if ((rc = execv_cmd(buf, 1, 1))) {
+	if ((rc = do_vzctl("stop", ctid, 1, DO_VZCTL_QUIET |
+		DO_VZCTL_FAST | DO_VZCTL_LOGGER)))
 		goto cleanup_4;
-	}
 
 	/* try to fix rpm database */
 	to->pm_fix_pkg_db(to);
@@ -388,12 +382,9 @@ int vztt2_upgrade(
 		goto cleanup_4;
 
 	/* start VPS */
-	snprintf(buf, sizeof(buf), "%s --skiplock --quiet start %s --wait", \
-			VZCTL, ctid);
-	vztt_logger(2, 0, buf);
-	if ((rc = execv_cmd(buf, 1, 1))) {
+	if ((rc = do_vzctl("start", ctid, 1, DO_VZCTL_QUIET |
+		DO_VZCTL_WAIT | DO_VZCTL_LOGGER)))
 		goto cleanup_4;
-	}
 
 	/* Call post-upgrade script */
  	if ((rc = tmplset_run_ve_scripts(t_tmpl, ctid, vc.ve_root, \
@@ -401,10 +392,8 @@ int vztt2_upgrade(
 		goto cleanup_4;
 
 	/* Restart VPS */
-	snprintf(buf, sizeof(buf), "%s --skiplock --quiet restart %s --wait", \
-			VZCTL, ctid);
-	vztt_logger(2, 0, buf);
-	rc = execv_cmd(buf, 1, 1);
+	rc = do_vzctl("restart", ctid, 1, DO_VZCTL_QUIET |
+		DO_VZCTL_WAIT | DO_VZCTL_LOGGER);
 
 cleanup_4:
 	tmpl_unlock(lockdata, opts_vztt->flags);
