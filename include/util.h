@@ -45,6 +45,8 @@ int get_loglevel();
 #define GFS_LOCKNAME_LEN        64
 #endif
 
+#define EXECV_CMD_MAX_ARGS 255 // Should be enough
+
 /* log levels */
 #define VZTL_DEB1	1  // to stdout in debug level >= 1
 #define VZTL_ERR		0  // to stderr in all modes with prefix "Error:"

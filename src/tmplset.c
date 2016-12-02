@@ -37,6 +37,7 @@
 #include <dirent.h>
 #include <error.h>
 #include <limits.h>
+#include <string.h>
 
 #include "vzcommon.h"
 #include "config.h"
@@ -575,37 +576,44 @@ int tmplset_install(
 		char *ostemplate,
 		int flags)
 {
-	int i, rc;
-	char cmd[PATH_MAX+1];
-	char cmd_noarch[PATH_MAX+1];
+	char pkg[PATH_MAX+1];
 	char path[PATH_MAX+1];
 	char tmpl_string[PATH_MAX+1];
-	char *tmpl_string_p = tmpl_string;
 	struct string_list_el *p;
 	struct stat st;
+	int rc = 0, i = 0;
+	char *arg[EXECV_CMD_MAX_ARGS];
 
-	rc = 0;
+	arg[i++] = YUM;
+	arg[i++] = "install";
+	arg[i++] = "-y";
 	if (t) {
 		string_list_for_each(tmpls, p) {
-			i = snprintf(tmpl_string_p, sizeof(tmpl_string), \
-			    " %s-%s-%s-%s", p->s, t->base->osname, \
-			     t->base->osver, t->base->osarch);
-			tmpl_string_p += i;
+			snprintf(tmpl_string, sizeof(tmpl_string),
+					"%s-%s-%s-%s", p->s, t->base->osname,
+					t->base->osver, t->base->osarch);
+			if (i > EXECV_CMD_MAX_ARGS - 1)
+				return vztt_error(VZT_INTERNAL, 0,
+						"Too many arguments");
+			arg[i++] = strdupa(tmpl_string);
 		}
+		--i; /* FIXME: process -ez suffix for last package */
 	} else {
 		snprintf(tmpl_string, sizeof(tmpl_string), \
-		    " %s", *ostemplate == '.' ? ostemplate+1 : ostemplate);
+				"%s", *ostemplate == '.' ? ostemplate+1 : ostemplate);
 	}
+	arg[i++] = pkg;
+	arg[i] = NULL;
 
-	snprintf(cmd, sizeof(cmd),  "%s-ez", tmpl_string);
-	snprintf(cmd_noarch, sizeof(cmd_noarch), "%s-x86_64-ez", tmpl_string);
-	vztt_logger(1, 0, "Some template(s)%s is not found, " \
+	vztt_logger(1, 0, "Some template(s): %s is not found, " \
 	    "running " YUM " to install it...", tmpl_string);
-
-	if ((rc = yum_install_execv_cmd(cmd, (flags & OPT_VZTT_QUIET), 1)) && 
-		(rc = yum_install_execv_cmd(cmd_noarch, (flags & OPT_VZTT_QUIET), 1))) {
-		vztt_logger(0, 0, "Failed to install the template(s):%s", tmpl_string);
-		return rc;
+	snprintf(pkg, sizeof(pkg), "%s-ez", tmpl_string);
+	if ((rc = execv_cmd(arg, (flags & OPT_VZTT_QUIET), 1))) {
+		snprintf(pkg, sizeof(pkg), "%s-x86_64-ez", tmpl_string);
+		if ((rc = execv_cmd(arg, (flags & OPT_VZTT_QUIET), 1))) {
+			vztt_logger(0, 0, "Failed to install the template(s): %s", tmpl_string);
+			return rc;
+		}
 	}
 
 	/* Add app template(s) to the list */

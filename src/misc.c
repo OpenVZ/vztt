@@ -1071,7 +1071,6 @@ static int check_vzup2date_eztmpl(
 	return (strlen(name) + 1);
 }
 
-#define EXECV_CMD_MAX_ARGS 255 // Should be enough
 /* install/update template as rpm package <rpm> on HN */
 /* TODO: get ostemplate name from rpm and lock ostemplate */
 static int do_template(
