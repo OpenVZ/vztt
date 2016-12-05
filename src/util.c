@@ -1498,7 +1498,7 @@ int yum_install_execv_cmd(struct string_list *pkgs, int quiet, int mod)
 	struct string_list_el *p;
 
 	if (string_list_empty(pkgs))
-		return 0;
+		return mod * VZT_CMD_FAILED;
 
 	argv[cnt++] = YUM;
 	argv[cnt++] = "install";
@@ -1511,6 +1511,7 @@ int yum_install_execv_cmd(struct string_list *pkgs, int quiet, int mod)
 				"Too many arguments");
 		argv[cnt++] = p->s;
 	}
+	argv[cnt++] = NULL;
 
 	return execv_cmd(argv, quiet, mod);
 }
