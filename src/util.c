@@ -1491,11 +1491,42 @@ int execv_cmd(char **argv, int quiet, int mod)
 	return rc;
 }
 
-int yum_install_execv_cmd(char *pkg, int quiet, int mod)
+int yum_install_execv_cmd(struct string_list *pkgs, int quiet, int mod)
 {
-	char *argv[] = {YUM, "install", "-y", pkg, NULL};
+	char *argv[EXECV_CMD_MAX_ARGS];
+	int cnt = 0, n;
+	struct string_list_el *p;
+
+	if (string_list_empty(pkgs))
+		return mod * VZT_CMD_FAILED;
+
+	argv[cnt++] = YUM;
+	argv[cnt++] = "install";
+	argv[cnt++] = "-y";
+
+	n = EXECV_CMD_MAX_ARGS - cnt - 1;
+	string_list_for_each(pkgs, p) {
+		if (cnt > n)
+			return vztt_error(VZT_INTERNAL, 0,
+				"Too many arguments");
+		argv[cnt++] = p->s;
+	}
+	argv[cnt++] = NULL;
 
 	return execv_cmd(argv, quiet, mod);
+}
+
+int yum_install_execv_cmd_op(char *pkg, int quiet, int mod)
+{
+	struct string_list pkgs;
+	int rc;
+
+	string_list_init(&pkgs);
+	string_list_add(&pkgs, pkg);
+	rc = yum_install_execv_cmd(&pkgs, quiet, mod);
+	string_list_clean(&pkgs);
+
+	return rc;
 }
 
 int rpm_remove_execv_cmd(char *rpm, struct options_vztt *opts_vztt)
@@ -1786,7 +1817,7 @@ int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
 			if (ARCHIVES[i] == VZT_ARCHIVE_LZRW && stat(PRL_COMPRESS_FP, &st) != 0) {
 				vztt_logger(1, 0, PRL_COMPRESS " utility is not found, " \
 				    "running " YUM " to install it...");
-				if (yum_install_execv_cmd(PRL_COMPRESS, 1, 1)) {
+				if (yum_install_execv_cmd_op(PRL_COMPRESS, 1, 1)) {
 					vztt_logger(0, 0, "Failed to install the " PRL_COMPRESS);
 					return -1;
 				}

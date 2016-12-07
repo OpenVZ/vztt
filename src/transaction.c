@@ -319,7 +319,7 @@ int pm_init(
 			vztt_logger(1, 0, "Environment %s is not" \
 			    " found, running " YUM \
 			    " to install it...", path);
-			if ((rc = yum_install_execv_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
+			if ((rc = yum_install_execv_cmd_op(cmd, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			{
 				vztt_logger(0, 0, "Failed to install the environment " \
 					"package required for the template.");

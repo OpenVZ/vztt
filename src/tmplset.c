@@ -576,44 +576,44 @@ int tmplset_install(
 		char *ostemplate,
 		int flags)
 {
-	char pkg[PATH_MAX+1];
 	char path[PATH_MAX+1];
 	char tmpl_string[PATH_MAX+1];
 	struct string_list_el *p;
+	struct string_list pkgs;
+	struct string_list pkgs_noarch;
 	struct stat st;
-	int rc = 0, i = 0;
-	char *arg[EXECV_CMD_MAX_ARGS];
+	int rc = 0;
 
-	arg[i++] = YUM;
-	arg[i++] = "install";
-	arg[i++] = "-y";
+	string_list_init(&pkgs);
+	string_list_init(&pkgs_noarch);
+
 	if (t) {
 		string_list_for_each(tmpls, p) {
 			snprintf(tmpl_string, sizeof(tmpl_string),
-					"%s-%s-%s-%s", p->s, t->base->osname,
+					"%s-%s-%s-%s-ez", p->s, t->base->osname,
 					t->base->osver, t->base->osarch);
-			if (i > EXECV_CMD_MAX_ARGS - 1)
-				return vztt_error(VZT_INTERNAL, 0,
-						"Too many arguments");
-			arg[i++] = strdupa(tmpl_string);
+			string_list_add(&pkgs, tmpl_string);
 		}
-		--i; /* FIXME: process -ez suffix for last package */
 	} else {
 		snprintf(tmpl_string, sizeof(tmpl_string), \
-				"%s", *ostemplate == '.' ? ostemplate+1 : ostemplate);
+				"%s-ez", *ostemplate == '.' ? ostemplate+1 : ostemplate);
+		string_list_add(&pkgs, tmpl_string);
+		snprintf(tmpl_string, sizeof(tmpl_string), \
+				"%s-x86_64-ez", *ostemplate == '.' ? ostemplate+1 : ostemplate);
+		string_list_add(&pkgs_noarch, tmpl_string);
 	}
-	arg[i++] = pkg;
-	arg[i] = NULL;
 
 	vztt_logger(1, 0, "Some template(s): %s is not found, " \
 	    "running " YUM " to install it...", tmpl_string);
-	snprintf(pkg, sizeof(pkg), "%s-ez", tmpl_string);
-	if ((rc = execv_cmd(arg, (flags & OPT_VZTT_QUIET), 1))) {
-		snprintf(pkg, sizeof(pkg), "%s-x86_64-ez", tmpl_string);
-		if ((rc = execv_cmd(arg, (flags & OPT_VZTT_QUIET), 1))) {
-			vztt_logger(0, 0, "Failed to install the template(s): %s", tmpl_string);
-			return rc;
-		}
+	if ((rc = yum_install_execv_cmd(&pkgs, (flags & OPT_VZTT_QUIET), 1)) &&
+		(rc = yum_install_execv_cmd(&pkgs_noarch, (flags & OPT_VZTT_QUIET), 1))) {
+			vztt_logger(0, 0, "Failed to install the template(s):");
+			#pragma GCC diagnostic ignored "-Waddress"
+			string_list_for_each(&pkgs, p)
+				vztt_logger(0, 0, "%s", p->s);
+			string_list_for_each(&pkgs_noarch, p)
+				vztt_logger(0, 0, "%s", p->s);
+			goto cleanup;
 	}
 
 	/* Add app template(s) to the list */
@@ -628,15 +628,20 @@ int tmplset_install(
 				break;
 			}
 
-			if (!S_ISDIR(st.st_mode))
-				return VZT_CANT_OPEN;
+			if (!S_ISDIR(st.st_mode)) {
+				rc = VZT_CANT_OPEN;
+				goto cleanup;
+			}
 
 			if ((rc = tmplset_init_apps(path, p->s,
 			    &t->avail_apps)))
-				return rc;
+				goto cleanup;
 		}
 	}
 
+cleanup:
+	string_list_clean(&pkgs);
+	string_list_clean(&pkgs_noarch);
 	return rc;
 }
 

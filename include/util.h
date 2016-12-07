@@ -171,7 +171,8 @@ int exec_cmd(char *cmd, int quiet);
 int execv_cmd(char **argv, int quiet, int mod);
 /* Log execv call */
 void execv_cmd_logger(int log_level, int err_num, char **argv);
-int yum_install_execv_cmd(char *pkg, int quiet, int mod);
+int yum_install_execv_cmd(struct string_list *pkgs, int quiet, int mod);
+int yum_install_execv_cmd_op(char *pkg, int quiet, int mod);
 #define DO_VZCTL_NONE 0
 #define DO_VZCTL_QUIET (1U << 0)
 #define DO_VZCTL_FAST (1U << 1)

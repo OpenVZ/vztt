@@ -160,7 +160,7 @@ static int create_cache(
 			vztt_logger(1, 0, "Cache for %s is not found, " \
 			    "running " YUM " to install it...", ostemplate);
 
-			if ((rc = yum_install_execv_cmd(*ostemplate == '.' ? ostemplate+1 : ostemplate,
+			if ((rc = yum_install_execv_cmd_op(*ostemplate == '.' ? ostemplate+1 : ostemplate,
 				(opts_vztt->flags & OPT_VZTT_QUIET), 1)))
 			{
 				vztt_logger(0, 0, "Failed to install the template cache for %s",
