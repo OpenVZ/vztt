@@ -124,6 +124,9 @@ static int parse_os_name(char *tmpldir,
 	int lfound = 0;
 	size_t sz;
 
+	if (*ostemplate == '-')
+		return VZT_TMPL_BROKEN;
+
 	/* get token number */
 	if ((buf = strdup(ostemplate)) == NULL)
 		return vztt_error(VZT_CANT_ALLOC_MEM,
