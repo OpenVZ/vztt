@@ -133,7 +133,7 @@ int debug_level;
 
 void usage(const char * progname, int rc)
 {
-	fprintf(stderr,"OpenVZ EZ template management tool.\n");
+	fprintf(stderr,PRODUCT_NAME_SHORT " EZ template management tool.\n");
 	fprintf(stderr,"Usage:\n");
 	fprintf(stderr,"%s install | update | remove | localinstall | localupdate | upgrade |\n", progname);
 	fprintf(stderr,"    list | info | clean | fetch | status | link | update metadata |\n");
@@ -1260,7 +1260,7 @@ int main(int argc, char **argv)
 		/* Get vz service status */
 		rc = vzctl2_vz_status();
 		if (rc == -1) {
-			vztt_logger(0, 0, "Can not get OpenVZ service status");
+			vztt_logger(0, 0, "Can not get " PRODUCT_NAME_SHORT " service status");
 			return VZT_CANT_GET_VZ_STATUS;
 		} else if (rc != 1) {
 			vztt_logger(0, 0, "The vz service is not running");

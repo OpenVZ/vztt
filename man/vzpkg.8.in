@@ -1,7 +1,7 @@
 .\" $Id$
-.TH vzpkg 8 "March 2010" "OpenVZ"
+.TH vzpkg 8 "March 2010" "@PRODUCT_NAME_SHORT@"
 .SH NAME
-\fBvzpkg\fR \- tool for managing OpenVZ templates.
+\fBvzpkg\fR \- tool for managing @PRODUCT_NAME_SHORT@ templates.
 .SH SYNOPSYS
 \fBvzpkg\fR \fBinstall\fR [\fIoptions\fR] \fICT\ ID\fR | \fICT\ NAME\fR \fIobject\fR [\fIobject\fR ...]
 
@@ -56,7 +56,7 @@
 \fBvzpkg\fR \fBhelp\fR
 
 .SH DESCRIPTION
-OpenVZ management tool for handling EZ templates and
+@PRODUCT_NAME_SHORT@ management tool for handling EZ templates and
 standalone RPM/DPKG packages and RPM packages groups.
 .SS Commands
 .TP
@@ -280,7 +280,7 @@ vzctl binary was not found
 .IP "6"
 File already exists
 .IP "7"
-OpenVZ license is not loaded, or an invalid class ID is set.
+@PRODUCT_NAME_SHORT@ license is not loaded, or an invalid class ID is set.
 .IP "8"
 Running command exits with non-null code
 .IP "9"
@@ -298,9 +298,9 @@ Cannot parse string
 .IP "52"
 Cannot fetch file
 .IP "54"
-Cannot get OpenVZ service status
+Cannot get @PRODUCT_NAME_SHORT@ service status
 .IP "55"
-OpenVZ service is not running
+@PRODUCT_NAME_SHORT@ service is not running
 .IP "56"
 Invalid URL
 .IP "61"

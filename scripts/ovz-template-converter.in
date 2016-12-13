@@ -21,7 +21,7 @@
 # Our contact details: Parallels IP Holdings GmbH, Vordergasse 59, 8200
 # Schaffhausen, Switzerland.
 #
-# Convert OpenVZ template caches to Virtuozzo 7 templates
+# Convert OpenVZ template caches to @PRODUCT_NAME_SHORT@ 7 templates
 #
 
 import argparse
@@ -62,11 +62,11 @@ else:
     sys.exit(30)
 
 # Then parse arguments
-parser = argparse.ArgumentParser(description="Convert OpenVZ templates to Virtuozzo templates")
+parser = argparse.ArgumentParser(description="Convert OpenVZ templates to @PRODUCT_NAME_SHORT@ templates")
 parser.add_argument('--verbose', action="store_true",
                     help="Show details about the results of running the script")
 parser.add_argument('--templateroot', default=defaulttemplate,
-                    help="Virtuozzo templates directory (default: "+defaulttemplate+")")
+                    help="@PRODUCT_NAME_SHORT@ templates directory (default: "+defaulttemplate+")")
 parser.add_argument('template',
                     help="OpenVZ template file to convert")
 args = parser.parse_args()

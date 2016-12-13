@@ -26,6 +26,7 @@
 #include "config.h"
 #include "vzcommon.h"
 #include "options.h"
+#include "transaction.h"
 
 #ifndef _VZTT_UTIL_H_
 #define _VZTT_UTIL_H_
@@ -317,6 +318,8 @@ int old_ploop_cache_exists(unsigned long archive, const char *tmpldir,
 int compare_osrelease(char *osrelease1, char *osrelease2);
 
 int create_ve_layout(unsigned long velayout, char *ve_private);
+
+int create_veroot_unjump_checker(struct Transaction *pm, struct string_list *envs);
 
 #ifdef __cplusplus
 }

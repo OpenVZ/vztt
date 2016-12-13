@@ -72,9 +72,9 @@
 #define VZT_CANT_PARSE			14
 /* can not fetch file */
 #define VZT_CANT_FETCH			52
-/* Can not get OpenVZ service status */
+/* Can not get service status */
 #define VZT_CANT_GET_VZ_STATUS		54
-/* OpenVZ service does not running */
+/* Service does not running */
 #define VZT_VZ_NOT_RUNNING		55
 /* Invalid URL */
 #define VZT_INVALID_URL			56

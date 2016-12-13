@@ -1,7 +1,7 @@
 # Copyright (c) 2005-2010, Parallels, Inc. All rights reserved
 # All rights reserved.
 #
-# OpenVZ EZ templates management config file.
+# @PRODUCT_NAME_SHORT@ EZ templates management config file.
 
 # url to proxy cache server. If defined,vztt will add vztt_proxyhost 
 # to all urls from repositories and mirrorlists

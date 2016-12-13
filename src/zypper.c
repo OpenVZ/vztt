@@ -344,7 +344,7 @@ static int zypper_create_config(struct ZypperTransaction *zypper)
 	fprintf(fd, "history.logfile = %s/history\n",
 		zypper->tmpdir);
 
-	// Virtuozzo options
+	// VZ options
 	if (!EMPTY_CTID(zypper->ctid))
 		fprintf(fd, "vz.vps = %s\n", zypper->ctid);
 	if (zypper->force_openat)
@@ -611,6 +611,9 @@ static int zypper_run(
 		for (o = packages->tqh_first; o != NULL; o = o->e.tqe_next)
 			string_list_add(&args, o->s);
 	}
+
+	/* Enable checker */
+	create_veroot_unjump_checker((struct Transaction *)zypper, &envs);
 
 	/* export environments */
 	string_list_add(&envs,

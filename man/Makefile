@@ -4,7 +4,7 @@
 # document writer an easy ability to generate man pages in various formats,
 # in order to check the *roff/man markup.
 
-MANS = vzpkg.8 repkg.8 vzpkgrepo.8
+MANS = vzpkg.8
 
 TXTS = $(patsubst %, %.txt, $(MANS))
 PSS  = $(patsubst %, %.ps, $(MANS))

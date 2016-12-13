@@ -680,11 +680,11 @@ int check_ovz_cache(
 		}
 
 		vztt_logger(1, 0, "The precreated cache %s for the container has been "
-					"found and converted into the VZ7 format.\n"
+					"found and converted into the " PRODUCT_ABBREV " format.\n"
 					"Note: Such converted containers are not thoroughly "
 					"tested and may have limited functionality. "
 					"You are strongly recommended to use native "
-					"Virtuozzo templates instead.",
+					PRODUCT_NAME_SHORT " templates instead.",
 					cache_name);
 	}
 	else

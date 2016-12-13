@@ -805,15 +805,19 @@ int run_from_chroot(
 			args, envs, osrelease, NULL, NULL);
 }
 
-/* set package manager root dir */
-int pm_set_root_dir(struct Transaction *pm, const char *root_dir)
+static int normalize_root_dir(struct Transaction *pm, const char *root_dir)
 {
-	if (root_dir == NULL)
-		return 0;
-
 	/* do not check root_dir existence here : as sample, vzrestore does
 	   not create CT root, but vzctl will do it on start/mount.
 	   https://jira.sw.ru/browse/PSBM-14977 */
+	if ((pm->rootdir = realpath(root_dir, NULL)) != NULL)
+		return 0;
+
+	if (errno != ENOENT) {
+		vztt_logger(0, errno, "Failed to normalize %s", root_dir);
+		return VZT_CANT_PARSE;
+	}
+
 	if ((pm->rootdir = strdup(root_dir)) == NULL) {
 		vztt_logger(0, errno, "Cannot alloc memory");
 		return VZT_CANT_ALLOC_MEM;
@@ -822,11 +826,23 @@ int pm_set_root_dir(struct Transaction *pm, const char *root_dir)
 	return 0;
 }
 
+/* set package manager root dir */
+int pm_set_root_dir(struct Transaction *pm, const char *root_dir)
+{
+	if (root_dir == NULL)
+		return 0;
+
+	return normalize_root_dir(pm, root_dir);
+}
+
 /* create temporary root dir for package manager */
 int pm_create_tmp_root(struct Transaction *pm)
 {
+	int rc;
+
 	VZTT_FREE_STR(pm->rootdir);
-	pm->rootdir = strdup(pm->tmpdir);
+	if ((rc = normalize_root_dir(pm, pm->tmpdir)))
+		return rc;
 	return pm->pm_create_root(pm->tmpdir);
 }
 
@@ -1347,7 +1363,7 @@ int pm_check_url(char *url, char *vars[], int force)
 			vztt_logger(0, 0, "URL %s contents undefined variable\n"
 				"\tYou can define this variable in "
 				VZTT_URL_MAP
-				".\n\tSee OpenVZ Templates Management Guide "
+				".\n\tSee " PRODUCT_NAME_SHORT " Templates Management Guide "
 				"for more details.", url);
 			if (!force)
 				return VZT_INVALID_URL;
