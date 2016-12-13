@@ -230,6 +230,9 @@ int env_compat_get_install_pkg(struct Transaction *pm, struct package_list *pack
 	if ((rc = add_tmpl_envs(pm->tdata, &envs)))
 		return rc;
 
+	/* Enable checker */
+	create_veroot_unjump_checker(pm, &envs);
+
 	/* run cmd from chroot environment */
 	rc = run_from_chroot2("/usr/lib/rpm/rpmq", pm->envdir, pm->debug,
 		pm->ign_pm_err, &args, &envs, pm->osrelease, read_rpm,
@@ -744,6 +747,9 @@ static int remove_pkg_byrpm(struct Transaction *pm,
 	for (p = packages->tqh_first; p != NULL; p = p->e.tqe_next)
 		string_list_add(&args, p->s);
 
+	/* Enable checker */
+	create_veroot_unjump_checker(pm, &envs);
+
 	/* add templates environments too */
 	if ((rc = add_tmpl_envs(pm->tdata, &envs)))
 		return rc;
@@ -1001,6 +1007,9 @@ int env_compat_rpm_get_info(
 		RELEASE_TITLE "\%\{RELEASE}\\n"\
 		SUMMARY_TITLE "\%\{SUMMARY}\\n"\
 		DESC_TITLE "\%\{DESCRIPTION}\\n\\n");
+
+	/* Enable checker */
+	create_veroot_unjump_checker(pm, &envs);
 
 	/* add templates environments too */
 	if ((rc = add_tmpl_envs(pm->tdata, &envs)))

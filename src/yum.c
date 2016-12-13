@@ -632,6 +632,9 @@ static int yum_run(
 			string_list_add(&args, o->s);
 	}
 
+	/* Enable checker */
+	create_veroot_unjump_checker((struct Transaction *)yum, &envs);
+
 	/* export environments */
 	string_list_add(&envs, yum->pythonpath);
 

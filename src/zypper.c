@@ -612,6 +612,9 @@ static int zypper_run(
 			string_list_add(&args, o->s);
 	}
 
+	/* Enable checker */
+	create_veroot_unjump_checker((struct Transaction *)zypper, &envs);
+
 	/* export environments */
 	string_list_add(&envs,
 		"PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin");

@@ -2099,7 +2099,8 @@ int compare_osrelease(char *osrelease1, char *osrelease2)
 	return 0;
 }
 
-static int create_ve_layout_link(unsigned long velayout, char *ve_private) {
+static int create_ve_layout_link(unsigned long velayout, char *ve_private)
+{
 	char path[PATH_MAX+1];
 	int rc;
 
@@ -2115,7 +2116,8 @@ static int create_ve_layout_link(unsigned long velayout, char *ve_private) {
 	return rc;
 }
 
-int create_ve_layout(unsigned long velayout, char *ve_private) {
+int create_ve_layout(unsigned long velayout, char *ve_private)
+{
 	char path[PATH_MAX+1];
 
 	if (create_ve_layout_link(velayout, ve_private))
@@ -2132,4 +2134,42 @@ int create_ve_layout(unsigned long velayout, char *ve_private) {
 	}
 
 	return 0;
+}
+
+#define CHECKER_DIR "/usr/libexec/"
+#define CHECKER CHECKER_DIR "vztt_checker_open.so"
+#define CHECKER32 CHECKER_DIR "vztt_checker_open32.so"
+
+int create_veroot_unjump_checker(struct Transaction *pm, struct string_list *envs)
+{
+	char buf[PATH_MAX];
+	char *checker;
+	int rc = 0;
+
+	if (pm == NULL || pm->envdir == NULL || pm->rootdir == NULL)
+		return 0;
+
+	if (strcmp(ARCH_X86_64, pm->pkgarch) == 0)
+		checker = CHECKER;
+	else
+		checker = CHECKER32;
+
+	/* Install checker to environments */
+	snprintf(buf, sizeof(buf), "%s/%s", pm->envdir, CHECKER_DIR);
+	if ((rc = create_dir(buf)))
+		return vztt_error(VZT_CANT_CREATE, rc, "can't create %s", buf);
+	snprintf(buf, sizeof(buf), "%s/%s", pm->envdir, checker);
+	unlink(buf);
+	if ((rc = copy_file(buf, checker)))
+		return vztt_error(VZT_CANT_COPY, rc, "can't create %s", buf);
+
+	/* Install checker library loader */
+	snprintf(buf, sizeof(buf), "LD_PRELOAD=%s", checker);
+	string_list_add(envs, buf);
+
+	/* Fill VEROOT env for checker */
+	snprintf(buf, sizeof(buf), "VZTT_VEROOT=%s", pm->rootdir);
+	string_list_add(envs, buf);
+
+	return rc;
 }
