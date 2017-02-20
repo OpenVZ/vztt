@@ -1363,7 +1363,7 @@ int pm_check_url(char *url, char *vars[], int force)
 			vztt_logger(0, 0, "URL %s contents undefined variable\n"
 				"\tYou can define this variable in "
 				VZTT_URL_MAP
-				".\n\tSee OpenVZ Templates Management Guide "
+				".\n\tSee " PRODUCT_NAME_SHORT " Templates Management Guide "
 				"for more details.", url);
 			if (!force)
 				return VZT_INVALID_URL;

@@ -1872,9 +1872,9 @@ int apt_create_post_init_cache(
 		return VZT_CANT_OPEN;
 	}
 	fputs("Package: dpkg\nVersion: 1.9.1\nStatus: install ok installed\n" \
-		"Maintainer: Virtuozzo <wolf@virtuozzo.com>\n" \
+		"Maintainer: " PRODUCT_NAME_SHORT " <wolf@" DEFAULT_DOMAIN ">\n" \
 		"Architecture: all\n" \
-		"Description: dpkg patched by Virtuozzo\n", fp);
+		"Description: dpkg patched by " PRODUCT_NAME_SHORT "\n", fp);
 	fclose(fp);
 
 	for (l = packages0->tqh_first; l != NULL; l = l->e.tqe_next) {

@@ -86,7 +86,7 @@ struct ve_config
 };
 
 
-/* global OpenVZ config parameters */
+/* global config parameters */
 void global_config_init(struct global_config *gc);
 int global_config_read(
 		struct global_config *gc,
