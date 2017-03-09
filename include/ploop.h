@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Parallels IP Holdings GmbH
+ * Copyright (c) 2015-2017, Parallels International GmbH
  *
  * This file is part of OpenVZ. OpenVZ is free software;
  * you can redistribute it and/or modify it under the terms of the GNU

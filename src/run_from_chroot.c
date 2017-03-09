@@ -1,6 +1,6 @@
 /* $Id$
  *
- * Copyright (c) Parallels, 2010
+ * Copyright (c) 2010-2017, Parallels International GmbH
  * All rights reserved.
  *
  * Wrapper to set kernel osrelease (optionally) + chroot + exec
