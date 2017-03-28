@@ -1057,9 +1057,9 @@ int apt_create_root(char *dir)
 		return VZT_CANT_OPEN;
 	}
 	str = "Package: dpkg\nVersion: 1.9.1\nStatus: install ok installed\n" \
-		"Maintainer: Parallels <wolf@parallels.com>\n" \
+		"Maintainer: " PRODUCT_NAME_SHORT " <wolf@" DEFAULT_DOMAIN ">\n" \
 		"Architecture: all\n" \
-		"Description: dpkg patched by Parallels\n";
+		"Description: dpkg patched by " PRODUCT_NAME_SHORT "\n";
 	rc = write(fd, (void *)str, strlen(str) + 1);
 	close(fd);
 	if (rc == -1)
