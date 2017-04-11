@@ -616,6 +616,7 @@ int tmplset_install(
 				vztt_logger(0, 0, "%s", p->s);
 			string_list_for_each(&pkgs_noarch, p)
 				vztt_logger(0, 0, "%s", p->s);
+			rc = VZT_TMPL_NOT_FOUND;
 			goto cleanup;
 	}
 
