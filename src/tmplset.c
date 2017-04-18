@@ -1373,7 +1373,7 @@ static int remove_packages(
 {
 	struct app_tmpl_list_el *a;
 
-	for (a = t->used_apps.tqh_first; a != NULL; a = a->e.tqe_next) {
+	for (a = t->used_apps.tqh_first; a != NULL;) {
 		if (find_whole_pkgset(trans, packages, &a->tmpl->packages)) {
 			/* not found */
 			/* this template was implicitly removed
@@ -1381,7 +1381,8 @@ static int remove_packages(
 			remove_tmpl_privdir(ve_private, a->tmpl->name);
 			/* now previous will current */
 			a = app_tmpl_list_remove(&t->used_apps, a);
-		}
+		} else
+			a = a->e.tqe_next;
 	}
 	return 0;
 }
@@ -1494,7 +1495,7 @@ int tmplset_remove_marked_apps(
 	struct app_tmpl_list_el *a;
 
 	/* seek in used */
-	for (a = t->used_apps.tqh_first; a != NULL; a = a->e.tqe_next) {
+	for (a = t->used_apps.tqh_first; a != NULL;) {
 		if (a->tmpl->marker) {
 			/* remove from used */
 			remove_tmpl_privdir(ve_private, a->tmpl->name);
@@ -1503,6 +1504,7 @@ int tmplset_remove_marked_apps(
 		} else {
 			if (string_list_find(apps, a->tmpl->name) == NULL)
 				string_list_add(apps, a->tmpl->name);
+			a = a->e.tqe_next;
 		}
 	}
 
@@ -1521,13 +1523,14 @@ int tmplset_remove_marked_and_check_apps(
 	struct app_tmpl_list_el *a;
 
 	/* seek in used */
-	for (a = t->used_apps.tqh_first; a != NULL; a = a->e.tqe_next) {
+	for (a = t->used_apps.tqh_first; a != NULL;) {
 		if (a->tmpl->marker) {
 			/* remove from used */
 			remove_tmpl_privdir(ve_private, a->tmpl->name);
 			/* now previous will current */
 			a = app_tmpl_list_remove(&t->used_apps, a);
-		}
+		} else
+			a = a->e.tqe_next;
 	}
 
 	/* check installed templates */
