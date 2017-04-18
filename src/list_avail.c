@@ -82,7 +82,6 @@ static int free_atemplate_entry(struct atemplate_entry * ae)
 	free(ae->repository);
 	free(ae->version);
 	free(ae->name);
-	free(ae);
 
 	return 0;
 }
@@ -91,8 +90,14 @@ static int free_available_list(struct atemplate_list * alist)
 {
 	struct atemplate_entry * os;
 
-	TAILQ_FOREACH(os, alist, e)
-	free_atemplate_entry(os);
+	while (!TAILQ_EMPTY(alist)) {
+		TAILQ_FOREACH(os, alist, e) {
+			free_atemplate_entry(os);
+			TAILQ_REMOVE(alist, os, e);
+			free(os);
+			break;
+		}
+	}
 
 	return 0;
 }
