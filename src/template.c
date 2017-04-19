@@ -924,19 +924,19 @@ struct app_tmpl_list_el *app_tmpl_list_find(
 	return NULL;
 }
 
-/* remove element <el> from list <ls> and return pointer to previous elem
+/* remove element <el> from list <ls> and return pointer to next elem
    This function does not free content */
 struct app_tmpl_list_el *app_tmpl_list_remove(
 		struct app_tmpl_list *ls,
 		struct app_tmpl_list_el *el)
 {
 	/* get previous element */
-	struct app_tmpl_list_el *prev = *el->e.tqe_prev;
+	struct app_tmpl_list_el *next = el->e.tqe_next;
 
 	TAILQ_REMOVE(ls, el, e);
 	free((void *)el);
 
-	return prev;
+	return next;
 }
 
 /* clean list */
