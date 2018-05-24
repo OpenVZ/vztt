@@ -484,14 +484,14 @@ static int change_osrelease(char *osrelease, char *out, size_t size)
 	int ret;
 
 	if (uname(&utsbuf) != 0) {
-		vztt_logger(0, errno, "Unable to get node release, "
+		vztt_logger(-1, errno, "Unable to get node release, "
 			"uname() failed");
 		return VZT_INTERNAL;
 	}
 
 	if (sscanf(utsbuf.release, "%d.%d.%d", &cur_a, &cur_b,
 		&cur_c) != 3) {
-		vztt_logger(0, 0, "Unable to parse node release: %s",
+		vztt_logger(-1, 0, "Unable to parse node release: %s",
 			utsbuf.release);
 		return VZT_INTERNAL;
 	}
@@ -520,7 +520,7 @@ static int change_osrelease(char *osrelease, char *out, size_t size)
 			return 0;
 		}
 	} else {
-		vztt_logger(0, 0, "Incorrect osrelease syntax: %s", osrelease);
+		vztt_logger(-1, 0, "Incorrect osrelease syntax: %s", osrelease);
 		return VZT_TMPL_BROKEN;
 	}
 
@@ -551,13 +551,13 @@ static int run_clone(void *data)
 	{
 		if ((osrelease_fd = open(VIRT_OSRELEASE,
 			O_RDWR | O_TRUNC)) < 0) {
-			vztt_logger(0, errno, "Can't open " VIRT_OSRELEASE);
+			vztt_logger(-1, errno, "Can't open " VIRT_OSRELEASE);
 			return VZT_CANT_OPEN;
 		}
 		if ((write(osrelease_fd, osrelease,
 			strlen(osrelease))) <= 0)
 		{
-			vztt_logger(0, errno, "Can't write to " VIRT_OSRELEASE);
+			vztt_logger(-1, errno, "Can't write to " VIRT_OSRELEASE);
 			close(osrelease_fd);
 			return VZT_CANT_WRITE;
 		}
@@ -569,19 +569,19 @@ static int run_clone(void *data)
 
 	/* Cd to / to make availability to unjump from chroot */
 	if ((dir_fd=open("/", O_RDONLY)) < 0) {
-		vztt_logger(0, errno, "Can not open / directory");
+		vztt_logger(-1, errno, "Can not open / directory");
 		return VZT_CANT_OPEN;
 	}
 
 	/* Next we chroot() to the target directory */
 	if (chroot(params->envdir) < 0) {
-		vztt_logger(0, errno, "chroot(%s) failed", params->envdir);
+		vztt_logger(-1, errno, "chroot(%s) failed", params->envdir);
 		return VZT_CANT_CHROOT;
 	}
 
 	/* Go back */
 	if (fchdir(dir_fd) < 0) {
-		vztt_logger(0, errno, "fchdir(%s) failed", params->envdir);
+		vztt_logger(-1, errno, "fchdir(%s) failed", params->envdir);
 		return VZT_CANT_CHDIR;
 	}
 
