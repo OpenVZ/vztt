@@ -455,6 +455,8 @@ static int create_cache(
 
 	/* Check for mid-install script, currently used in Ubuntu 10.10 */
 	snprintf(cmd, sizeof(cmd), "%s/mid-pre-install", tmpl->os->confdir);
+	if (access(cmd, X_OK) != 0 && tmpl->base != 0)
+		snprintf(cmd, sizeof(cmd), "%s/mid-pre-install", tmpl->base->confdir);
 	if (access(cmd, X_OK) == 0) {
 		rc = to->pm_create_init_cache(to, &packages0, &packages1, &packages,
 			&installed);
@@ -479,6 +481,8 @@ static int create_cache(
 
 		/* Do not run mid-post-install if it does not exist */
 		snprintf(cmd, sizeof(cmd), "%s/mid-post-install", tmpl->os->confdir);
+		if (access(cmd, X_OK) != 0 && tmpl->base != 0)
+			snprintf(cmd, sizeof(cmd), "%s/mid-post-install", tmpl->base->confdir);
 		if (access(cmd, X_OK) == 0 && (rc = tmplset_run_ve_scripts(tmpl, ctid, ve_root,
 			"mid-post-install", 0, opts_vztt->progress_fd)))
 			goto cleanup_6;
