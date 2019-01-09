@@ -424,6 +424,13 @@ int load_base_os_tmpl(unsigned long fld_mask, struct base_os_tmpl *tmpl)
 		return VZT_TMPL_BROKEN;
 	}
 
+	/* package_manager should be initialized! */
+	if (!tmpl->package_manager) {
+		vztt_logger(0, 0, "package_manager file "\
+			"for %s EZ os template should be filled", tmpl->name);
+		return VZT_TMPL_BROKEN;
+	}
+
 #if 0 // Temporary disabled due to incompatibility of rpms libdb
 	/* Backward compatibility for 32-bit templates and pkgmans */
 	if ((cache_type = strstr(tmpl->package_manager, "x86")))
