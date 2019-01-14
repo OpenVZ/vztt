@@ -7,4 +7,4 @@ $DEB_SERVER	ftp://ftp.de.debian.org
 #$SLES_SERVER	http://
 $SUSE2_SERVER	ftp://ftp.suse.com
 $UBU_SERVER	http://archive.ubuntu.com
-$OLD_UBU_SERVER	http://old-releases.ubuntu.com
+#$OLD_UBU_SERVER	http://old-releases.ubuntu.com
