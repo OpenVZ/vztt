@@ -503,3 +503,4 @@ To remove the OS template fedora-core-12-x86 from the Node:
 .BR vzmktmpl (8).
 .SH COPYRIGHT
 Copyright (c) 2001-2017, Parallels International GmbH. All rights reserved.
+Copyright (c) 2017-2019 Virtuozzo International GmbH. All rights reserved.
