@@ -159,8 +159,8 @@ int yum_init(struct Transaction *pm)
 
 	/* get python version for yum */
 	/* try to find usr/lib[64]*\/python(2|3).* directory in environment */
-	for (p = 3; p <= 4; p++) {
-		for (i = 2; i <= 9; i++) {
+	for (p = 2; p <= 4; p++) {
+		for (i = 2; i <= 20; i++) {
 			snprintf(path, sizeof(path), "%s%s%s/python%d.%d", pp, \
 				pm->envdir, libdir, p, i);
 			ptr = path + strlen(pp);
