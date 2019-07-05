@@ -143,7 +143,7 @@ int yum_init(struct Transaction *pm)
 	char path[PATH_MAX+1];
 	char *libdir;
 	const char *pp = "PYTHONPATH=";
-	int i;
+	int i, p;
 	char *ptr;
 	struct stat st;
 	int lfound = 0;
@@ -158,17 +158,21 @@ int yum_init(struct Transaction *pm)
 		libdir = LIBDIR;
 
 	/* get python version for yum */
-	/* try to find usr/lib[64]*\/python2.* directory in environment */
-	for (i = 2; i <= 9; i++) {
-	   	snprintf(path, sizeof(path), "%s%s%s/python2.%d", pp, \
-			pm->envdir, libdir, i);
-		ptr = path + strlen(pp);
-		if (stat(ptr, &st) == 0) {
-			if (S_ISDIR(st.st_mode)) {
-				lfound = 1;
-				break;
+	/* try to find usr/lib[64]*\/python(2|3).* directory in environment */
+	for (p = 3; p <= 4; p++) {
+		for (i = 2; i <= 9; i++) {
+			snprintf(path, sizeof(path), "%s%s%s/python%d.%d", pp, \
+				pm->envdir, libdir, p, i);
+			ptr = path + strlen(pp);
+			if (stat(ptr, &st) == 0) {
+				if (S_ISDIR(st.st_mode)) {
+					lfound = 1;
+					break;
+				}
 			}
 		}
+		if (lfound)
+			break;
 	}
 	if (!lfound) {
 		vztt_logger(0, 0, "Python directory not found in %s", pm->envdir);
