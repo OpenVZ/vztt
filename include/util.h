@@ -321,6 +321,10 @@ int create_ve_layout(unsigned long velayout, char *ve_private);
 
 int create_veroot_unjump_checker(struct Transaction *pm, struct string_list *envs);
 
+int get_ploop_disk_stats(const char *ctid, struct vzctl_disk_stats *stats);
+
+int set_trusted(const char *ctid, const char *flag);
+
 #ifdef __cplusplus
 }
 #endif

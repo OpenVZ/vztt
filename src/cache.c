@@ -453,6 +453,8 @@ static int create_cache(
 		goto cleanup_5;
 	}
 
+	set_trusted(ctid, "1");
+
 	/* Check for mid-install script, currently used in Ubuntu 10.10 */
 	snprintf(cmd, sizeof(cmd), "%s/mid-pre-install", tmpl->os->confdir);
 	if (access(cmd, X_OK) != 0 && tmpl->base != 0)
@@ -478,6 +480,8 @@ static int create_cache(
 			DO_VZCTL_LOGGER))) {
 			goto cleanup_6;
 		}
+
+		set_trusted(ctid, "1");
 
 		/* Do not run mid-post-install if it does not exist */
 		snprintf(cmd, sizeof(cmd), "%s/mid-post-install", tmpl->os->confdir);
