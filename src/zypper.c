@@ -642,9 +642,15 @@ static int zypper_run(
 
 	progress(progress_stage, 0, zypper->progress_fd);
 
+	if (!EMPTY_CTID(zypper->ctid))
+		set_trusted(zypper->ctid, "1");
+
 	/* run cmd from chroot environment */
 	rc = run_from_chroot(cmd, zypper->envdir, zypper->debug,
 			zypper->ign_pm_err, &args, &envs, zypper->osrelease);
+
+	if (!EMPTY_CTID(zypper->ctid))
+		set_trusted(zypper->ctid, "0");
 
 	// Save the generated zypp.log on the high debug level
 	if (zypper->debug > 5) {
