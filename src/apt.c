@@ -694,7 +694,8 @@ static int apt_run(
 		struct AptTransaction *apt,
 		const char *cmd, \
 		const char *action, \
-		struct string_list *packages)
+		struct string_list *packages,
+		const char *ctid)
 {
 	int rc;
 	struct string_list args;
@@ -733,20 +734,22 @@ static int apt_run(
 
 	/* add proxy in environments */
 	if ((rc = add_proxy_env(&apt->http_proxy, HTTP_PROXY, &envs)))
-		return rc;
+		goto cleanup;
 	if ((rc = add_proxy_env(&apt->ftp_proxy, FTP_PROXY, &envs)))
-		return rc;
+		goto cleanup;
 	if ((rc = add_proxy_env(&apt->https_proxy, HTTPS_PROXY, &envs)))
-		return rc;
+		goto cleanup;
 
 	/* add templates environments too */
 	if ((rc = add_tmpl_envs(apt->tdata, &envs)))
-		return rc;
+		goto cleanup;
+
+	if (!EMPTY_CTID(ctid))
+		set_trusted(ctid, "1");
 
 	/* run cmd from chroot environment */
-	if ((rc = run_from_chroot((char *)cmd, apt->envdir, apt->debug, \
-			apt->ign_pm_err, &args, &envs, apt->osrelease)))
-		return rc;
+	rc = run_from_chroot((char *)cmd, apt->envdir, apt->debug, \
+			apt->ign_pm_err, &args, &envs, apt->osrelease);
 
 	apt_remove_config(apt);
 
@@ -754,20 +757,29 @@ static int apt_run(
 	string_list_clean(&args);
 	string_list_clean(&envs);
 
-	return 0;
+cleanup:
+	if (!EMPTY_CTID(ctid))
+		set_trusted(ctid, "0");
+	return rc;
 }
 
 /* run dpkg command */
-static int dpkg_run(struct AptTransaction *apt, char *cmd, struct string_list *args)
+static int dpkg_run(struct AptTransaction *apt, char *cmd, struct string_list *args, const char* ctid)
 {
 	int rc;
 	struct string_list envs;
 
 	string_list_init(&envs);
 
+	if (!EMPTY_CTID(ctid))
+		set_trusted(ctid, "1");
+
 	/* run cmd from chroot environment */
 	rc = run_from_chroot(cmd, apt->envdir, apt->debug, 
 		apt->ign_pm_err, args, &envs, apt->osrelease);
+
+	if (!EMPTY_CTID(ctid))
+		set_trusted(ctid, "0");
 
 	return rc;
 }
@@ -793,7 +805,7 @@ int apt_update_metadata(struct Transaction *pm, const char *name)
 	will created in template area */
 	pm->data_source = OPT_DATASOURCE_REMOTE;
 	string_list_add(&apt->options, "APT::Get::List-Cleanup=false");
-	rc = apt_run(apt, APT_GET_BIN, "update", NULL);
+	rc = apt_run(apt, APT_GET_BIN, "update", NULL, pm->ctid);
 	pm->data_source = data_source;
 	if (rc)
 		return rc;
@@ -812,7 +824,7 @@ int apt_update_metadata(struct Transaction *pm, const char *name)
 
 	/* get full packages list and update metadata */
 	pm->data_source = OPT_DATASOURCE_REMOTE;
-	rc = apt_run(apt, APT_CACHE_BIN, "pkgnames", NULL);
+	rc = apt_run(apt, APT_CACHE_BIN, "pkgnames", NULL, pm->ctid);
 	pm->data_source = data_source;
 	if (rc)
 		return rc;
@@ -983,7 +995,7 @@ int apt_action(
 
 	progress(progress_stage, 0, apt->progress_fd);
 
-	rc = apt_run(apt, bin, cmd, packages);
+	rc = apt_run(apt, bin, cmd, packages, pm->ctid);
 
 	progress(progress_stage, 100, apt->progress_fd);
 
@@ -1754,7 +1766,7 @@ int apt_create_init_cache(
 	string_list_add(&apt->dpkg_options, "--force-overwrite");
 	string_list_add(&apt->dpkg_options, "--force-downgrade");
 	apt->download_only = 1;
-	if ((rc = apt_run(apt, APT_GET_BIN, "install", &ls)))
+	if ((rc = apt_run(apt, APT_GET_BIN, "install", &ls, pm->ctid)))
 		return rc;
 	apt->download_only = 0;
 	string_list_clean(&pm->options);
@@ -1793,7 +1805,7 @@ int apt_create_init_cache(
 		apt_get_pkg_dirname(pkg, buf+strlen(buf), sizeof(buf)-strlen(buf));
 		strncat(buf, DEB_EXT, sizeof(buf)-strlen(buf)-1);
 		string_list_add(&opts, buf);
-		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
+		if ((rc = dpkg_run(apt, DPKG_BIN, &opts, pm->ctid)))
 			goto cleanup;
 	}
 	progress(PROGRESS_PKGMAN_INST_PACKAGES1, 100, pm->progress_fd);
@@ -1822,7 +1834,7 @@ int apt_create_init_cache(
 
 		strncat(buf, DEB_EXT, sizeof(buf)-strlen(buf)-1);
 		string_list_add(&opts, buf);
-		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
+		if ((rc = dpkg_run(apt, DPKG_BIN, &opts, pm->ctid)))
 			goto cleanup;
 	}
 
@@ -1912,7 +1924,7 @@ int apt_create_post_init_cache(
 			strncat(path, DEB_EXT, sizeof(path)-strlen(path)-1);
 			string_list_add(&opts, path);
 		}
-		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
+		if ((rc = dpkg_run(apt, DPKG_BIN, &opts, pm->ctid)))
 			goto cleanup;
 	}
 
@@ -1949,7 +1961,7 @@ int apt_create_post_init_cache(
 	}
 
 	if (string_list_size(packages1)) {
-		if ((rc = dpkg_run(apt, DPKG_BIN, &opts)))
+		if ((rc = dpkg_run(apt, DPKG_BIN, &opts, pm->ctid)))
 			goto cleanup;
 
 		snprintf(cmd, sizeof(cmd), \
@@ -2352,7 +2364,7 @@ int apt_last_repair_fetch(
 	data_source = pm->data_source;
 	pm->data_source = OPT_DATASOURCE_REMOTE;
 	string_list_add(&pm->options, "APT::Get::List-Cleanup=false");
-	rc = apt_run(apt, APT_GET_BIN, "update", NULL);
+	rc = apt_run(apt, APT_GET_BIN, "update", NULL, pm->ctid);
 	string_list_clean(&pm->options);
 	pm->data_source = data_source;
 	if (rc)
