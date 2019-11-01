@@ -41,6 +41,7 @@
 #include <utime.h>
 #include <asm/unistd.h>
 #include <sys/mount.h>
+#include <sys/sysmacros.h>
 
 #include <vzctl/libvzctl.h>
 #include <vzctl/vzerror.h>
