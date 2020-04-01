@@ -755,15 +755,9 @@ static int remove_pkg_byrpm(struct Transaction *pm,
 	if ((rc = add_tmpl_envs(pm->tdata, &envs)))
 		return rc;
 
-	if (!EMPTY_CTID(pm->ctid))
-		set_trusted(pm->ctid, "1");
-
 	/* run cmd from chroot environment */
 	rc = run_from_chroot("/usr/lib/rpm/rpmi", pm->envdir, pm->debug,
 			pm->ign_pm_err, &args, &envs, pm->osrelease);
-
-	if (!EMPTY_CTID(pm->ctid))
-		set_trusted(pm->ctid, "0");
 
 	/* free mem */
 	string_list_clean(&args);
