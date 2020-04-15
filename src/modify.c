@@ -167,7 +167,6 @@ static int cmd_modify(
 	if ((rc = tmpl_lock(&gc, tmpl->base, 
 			LOCK_READ, opts_vztt->flags, &lockdata)))
 		goto cleanup_3;
-
 	switch(cmd) {
 		case VZPKG_INSTALL:
 			/* Install packages into VE */
