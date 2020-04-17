@@ -174,6 +174,9 @@ static int cmd_modify(
 	if ((rc = tmpl_lock(&gc, tmpl->base, 
 			LOCK_READ, opts_vztt->flags, &lockdata)))
 		goto cleanup_3;
+
+	set_trusted(ctid, "1");
+
 	switch(cmd) {
 		case VZPKG_INSTALL:
 			/* Install packages into VE */
@@ -237,6 +240,7 @@ static int cmd_modify(
 				goto cleanup_4;
 			break;
 	}
+	set_trusted(ctid, "0");
 	tmpl_unlock(lockdata, opts_vztt->flags);
 
 	/* fill output packages arrays */
@@ -271,6 +275,7 @@ static int cmd_modify(
 
 	goto cleanup_3;
 cleanup_4:
+	set_trusted(ctid, "0");
 	tmpl_unlock(lockdata, opts_vztt->flags);
 cleanup_3:
 	sigaction(SIGINT, &act_int, NULL);
