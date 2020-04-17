@@ -148,13 +148,20 @@ static int cmd_modify(
 	for (i = 0; i < size; i++)
 		string_list_add(&args, packages[i]);
 
+
+	/* Get installed vz packages list */
+	if ((rc = pm_get_installed_vzpkg(to, vc.ve_private, &existed))) {
+		if (rc != VZT_CANT_OPEN)
+			goto cleanup_1;
+		/* Recreate vzpackages if missing */
+		if ((rc = vztt2_sync_vzpackages(ctid, opts_vztt)))
+			goto cleanup_1;
+		if ((rc = pm_get_installed_vzpkg(to, vc.ve_private, &existed)))
+			goto cleanup_1;
+	}
 	/* lock VE */
 	if ((rc = lock_ve(ctid, opts_vztt->flags, &velockdata)))
 		goto cleanup_1;
-
-	/* Get installed vz packages list */
-	if ((rc = pm_get_installed_vzpkg(to, vc.ve_private, &existed)))
-		goto cleanup_2;
 
 	/* ignore SIGINT */
 	sigaction(SIGINT, NULL, &act_int);
@@ -651,13 +658,20 @@ int vztt2_install_tmpl(
 	if ((rc = pm_add_exclude(to, vc.exclude)))
 		goto cleanup_1;
 
+	/* Get installed vz packages list */
+	if ((rc = pm_get_installed_vzpkg(to, vc.ve_private, &existed))) {
+		if (rc != VZT_CANT_OPEN)
+			goto cleanup_1;
+		/* Recreate vzpackages if missing */
+		if ((rc = vztt2_sync_vzpackages(ctid, opts_vztt)))
+			goto cleanup_1;
+		if ((rc = pm_get_installed_vzpkg(to, vc.ve_private, &existed)))
+			goto cleanup_1;
+	}
+
 	/* lock VE */
 	if ((rc = lock_ve(ctid, opts_vztt->flags, &velockdata)))
 		goto cleanup_1;
-
-	/* Get installed vz packages list */
-	if ((rc = pm_get_installed_vzpkg(to, vc.ve_private, &existed)))
-		goto cleanup_2;
 
 	/* ignore SIGINT */
 	sigaction(SIGINT, NULL, &act_int);
