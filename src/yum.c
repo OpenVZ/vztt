@@ -475,6 +475,7 @@ static int yum_run(
 		string_list_add(&args, "--vps");
 		snprintf(buf, sizeof(buf), "%s", yum->ctid);
 		string_list_add(&args, buf);
+		set_trusted(yum->ctid, "1");
 	}
 	if (action == VZPKG_GET) {
 		string_list_add(&args, "--not-resolve");
@@ -645,22 +646,21 @@ static int yum_run(
 
 	/* add proxy in environments */
 	if ((rc = add_proxy_env(&yum->http_proxy, HTTP_PROXY, &envs)))
-		return rc;
+		goto cleanup;
 	if ((rc = add_proxy_env(&yum->ftp_proxy, FTP_PROXY, &envs)))
-		return rc;
+		goto cleanup;
 	if ((rc = add_proxy_env(&yum->https_proxy, HTTPS_PROXY, &envs)))
-		return rc;
+		goto cleanup;
 
 	/* add templates environments too */
 	if ((rc = add_tmpl_envs(yum->tdata, &envs)))
-		return rc;
+		goto cleanup;
 
 	progress(progress_stage, 0, yum->progress_fd);
 
 	/* run cmd from chroot environment */
-	if ((rc = run_from_chroot(cmd, yum->envdir, yum->debug,
-			yum->ign_pm_err, &args, &envs, yum->osrelease)))
-		return rc;
+	rc = run_from_chroot(cmd, yum->envdir, yum->debug,
+			yum->ign_pm_err, &args, &envs, yum->osrelease);
 
 	yum_remove_config(yum);
 
@@ -670,7 +670,10 @@ static int yum_run(
 
 	progress(progress_stage, 100, yum->progress_fd);
 
-	return 0;
+cleanup:
+	if (!EMPTY_CTID(yum->ctid))
+		set_trusted(yum->ctid, "0");
+	return rc;
 }
 
 /* run yum transaction */
