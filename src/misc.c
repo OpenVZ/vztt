@@ -485,6 +485,7 @@ int vztt2_sync_vzpackages(
 	struct tmpl_set *tmpl;
 
 	progress(PROGRESS_SYNC_PACKAGES, 0, opts_vztt->progress_fd);
+	vztt_logger(0, 0, "%s", PROGRESS_SYNC_PACKAGES); 
 
 	/* struct initialization: should be first block */
 	global_config_init(&gc);
