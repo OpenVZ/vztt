@@ -33,33 +33,33 @@ import sys
 import tempfile
 import configobj
 
-def writeconfig(configfile, configtext, configmode=0644):
+def writeconfig(configfile, configtext, configmode=0o0644):
     fp = open(configfile, "w+")
     fp.write(configtext)
     fp.close()
     os.chmod(configfile, configmode)
 
 if (os.geteuid() != 0):
-    print "Error: You need to have root privileges to run this script"
+    print("Error: You need to have root privileges to run this script")
     sys.exit(73)
 
 # Read configs first
 config = configobj.ConfigObj("/etc/vz/vz.conf")
 defaulttemplate=config.get("TEMPLATE")
 if not defaulttemplate:
-    print "Error: TEMPLATE variable in " + config.filename + " isn't set"
+    print("Error: TEMPLATE variable in " + config.filename + " isn't set")
     sys.exit(37)
 
 vefstype=config.get("VEFSTYPE")
 if not vefstype:
-    print "Error: VEFSTYPE variable in " + config.filename + " isn't set"
+    print("Error: VEFSTYPE variable in " + config.filename + " isn't set")
     sys.exit(37)
 
 config = configobj.ConfigObj("/etc/vz/conf/vps.vzpkgtools.conf-sample")
 if config.get("DISKSPACE"):
     diskspace=config.get("DISKSPACE").split(":")[0]
 else:
-    print "Error: DISKSPACE variable in " + config.filename + " isn't set"
+    print("Error: DISKSPACE variable in " + config.filename + " isn't set")
     sys.exit(30)
 
 # Then parse arguments
@@ -82,22 +82,22 @@ else:
 args.templateroot += "/"
 
 if (not os.path.isfile(args.template)):
-    print "Error: Template file", args.template, "doesn't exist"
+    print("Error: Template file", args.template, "doesn't exist")
     sys.exit(73)
 
 if (not args.template.endswith('.tar.gz')):
-    print "Error: Incorrect template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)"
+    print("Error: Incorrect template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)")
     sys.exit(73)
 
 # Extract filename from full path and remove .tar.gz, then parse filename
 templateinfo = os.path.basename(args.template)[:-7].split("-")
 if (not len(templateinfo) in (3, 4)):
-    print "Error: Incorrect template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)"
+    print("Error: Incorrect template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)")
     sys.exit(73)
 
 arch = templateinfo[2]
 if arch != "x86_64" and arch != "x86":
-    print "Error: Incorrect architecture or template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)"
+    print("Error: Incorrect architecture or template file format", args.template, "(should be distribution-version-arch[-setname].tar.gz)")
     sys.exit(73)
 
 tarname = ''.join([templateinfo[0], "-", templateinfo[1], "-", arch])
@@ -111,8 +111,8 @@ lz4path = ''.join([tarpath, ".lz4"])
 
 cachepath = ''.join([args.templateroot, "cache/", tarname, ".lz4"])
 if (os.path.isfile(cachepath)):
-    print "Error: Cache file for the selected template already exists:", cachepath
-    print "Error: Remove this cache file and run the script again"
+    print("Error: Cache file for the selected template already exists:", cachepath)
+    print("Error: Remove this cache file and run the script again")
     sys.exit(73)
 
 baseconfpath = ''.join([args.templateroot, templateinfo[0], "/", templateinfo[1], "/", templateinfo[2], "/config/os/"])
@@ -123,24 +123,24 @@ else:
     distroconfpath = defaultconfpath
 
 if (os.path.exists(distroconfpath)):
-    print "Error: Config directory for the selected template already exists:", distroconfpath
-    print "Error: Remove this config directory and run the script again"
+    print("Error: Config directory for the selected template already exists:", distroconfpath)
+    print("Error: Remove this config directory and run the script again")
     sys.exit(73)
 
 basedir = tempfile.mkdtemp()
 if (verbose):
-    print "Created", basedir, "as a temporary working directory"
+    print("Created", basedir, "as a temporary working directory")
 
 if (vefstype == "simfs"):
     contentsdir = basedir + "/fs"
     os.mkdir(contentsdir)
     os.symlink("4", basedir + "/.ve.layout")
     if (verbose):
-        print "Extracting the OpenVZ template tarball to", contentsdir
+        print("Extracting the OpenVZ template tarball to", contentsdir)
     try:
         subprocess.call(["tar", "-xf", args.template, "-C", contentsdir], **kwargs)
     except:
-        print "Error: Failed to extract the specified OpenVZ template tarball"
+        print("Error: Failed to extract the specified OpenVZ template tarball")
         sys.exit(73)
 else:
     # Allow to work on ext3 (same as in create_ploop() in vztt/src/ploop.c)
@@ -150,49 +150,49 @@ else:
     try:
         subprocess.call(["ploop", "init", roothds, "-s", diskspace], **kwargs)
     except:
-        print "Error: Failed to run ploop init"
+        print("Error: Failed to run ploop init")
         sys.exit(73)
     contentsdir = tempfile.mkdtemp()
 
     if (verbose):
-        print "Created", contentsdir, "as a temporary directory to unpack template contents"
+        print("Created", contentsdir, "as a temporary directory to unpack template contents")
     diskdescriptor = ''.join([basedir, "/DiskDescriptor.xml"])
     try:
         subprocess.call(["ploop", "mount", diskdescriptor, "-m", contentsdir], **kwargs)
     except:
-        print "Error: Failed to run ploop mount"
+        print("Error: Failed to run ploop mount")
         sys.exit(73)
 
     if (verbose):
-        print "Extracting the OpenVZ template tarball to", contentsdir
+        print("Extracting the OpenVZ template tarball to", contentsdir)
     try:
         subprocess.call(["tar", "-xf", args.template, "-C", contentsdir], **kwargs)
     except:
-        print "Error: Failed to extract the specified OpenVZ template tarball"
+        print("Error: Failed to extract the specified OpenVZ template tarball")
         sys.exit(73)
     try:
         subprocess.call(["ploop", "umount", diskdescriptor, "-m", contentsdir], **kwargs)
     except:
-        print "Error: Failed to run ploop umount"
+        print("Error: Failed to run ploop umount")
         sys.exit(73)
     os.environ["PLOOP_SKIP_EXT4_EXTENTS_CHECK"] = ""
 
     shutil.rmtree(contentsdir)
     if (verbose):
-        print "Deleted the temporary template contents directory", contentsdir
+        print("Deleted the temporary template contents directory", contentsdir)
 
 # Compress cache file and make it usable by prlctl
 if (verbose):
-    print "Creating cache file for the selected template"
+    print("Creating cache file for the selected template")
 try:
     subprocess.call(["tar", "cvf", tarpath, "-C", basedir, "."], **kwargs)
 except:
-    print "Error: Failed to create cache file tarball"
+    print("Error: Failed to create cache file tarball")
     sys.exit(73)
 try:
     subprocess.call(["lz4", "-1", tarpath, lz4path], **kwargs)
 except:
-    print "Error: Failed to LZ4-compress cache file tarball"
+    print("Error: Failed to LZ4-compress cache file tarball")
     sys.exit(73)
 
 os.remove(tarpath)
@@ -200,11 +200,11 @@ if (not os.path.exists(''.join([args.templateroot, "cache/"]))):
     os.makedirs(''.join([args.templateroot, "cache/"]))
 shutil.move(lz4path, cachepath)
 if (verbose):
-    print "Created cache file for the selected template:", cachepath
+    print("Created cache file for the selected template:", cachepath)
 
 shutil.rmtree(basedir)
 if (verbose):
-    print "Deleted the temporary working directory", basedir
+    print("Deleted the temporary working directory", basedir)
 shutil.rmtree(tempdir)
 
 # Create directory tree for selected template and fill it with empty files
