@@ -154,11 +154,18 @@ static int create_cache(
 			opts_vztt->flags)))
 		return rc;
 
+	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
+				get_cache_type(&gc), gc.template_dir, tmpl->os->name);
+	if ((cachename = strdup(path)) == NULL) {
+		vztt_logger(0, errno, "Cannot alloc memory");
+		rc = VZT_CANT_ALLOC_MEM;
+		goto cleanup_0;
+	}
+
 	/* Check for pkg operations allowed */
 	if ((tmpl->base->no_pkgs_actions || tmpl->os->no_pkgs_actions) &&
 		check_ovz_cache(gc.template_dir, ostemplate, 1) != 0) {
 		if (access(cachename, F_OK) != 0) {
-			
 			vztt_logger(1, 0, "Cache for %s is not found, " \
 			    "running " YUM " to install it...", ostemplate);
 
@@ -179,18 +186,11 @@ static int create_cache(
 		goto cleanup_0;
 	}
 
+        /* Check for cache_type supported */
 	if ((tmpl->base->cache_type & get_cache_type(&gc)) == 0) {
 		vztt_logger(0, 0, "The template is not compatible with the " \
 			"VEFSTYPE used");
 		rc = VZT_TMPL_BROKEN;
-		goto cleanup_0;
-	}
-
-	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
-				get_cache_type(&gc), gc.template_dir, tmpl->os->name);
-	if ((cachename = strdup(path)) == NULL) {
-		vztt_logger(0, errno, "Cannot alloc memory");
-		rc = VZT_CANT_ALLOC_MEM;
 		goto cleanup_0;
 	}
 
