@@ -82,6 +82,7 @@ typedef enum vztt_cmd_t {
 	VZTT_CMD_UPDATE_APPCACHE,
 	VZTT_CMD_REMOVE_APPCACHE,
 	VZTT_CMD_LIST_APPCACHE,
+	VZTT_CMD_CREATE_PLOOP_IMAGE,
 } vztt_cmd_t;
 
 enum {
@@ -162,6 +163,7 @@ void usage(const char * progname, int rc)
 	fprintf(stderr,"%s create appcache [-f] [-q|-d <level>] [--config"\
 			" <config>] [ --ostemplate <ostemplate> ]"\
 			" [ --apptemplate <apptemplate<,apptemplate...>> ]\n", progname);
+	fprintf(stderr,"%s create image <OS template> <path>\n", progname);
 	fprintf(stderr,"%s update appcache [-f] [-q|-d <level>] [--config"\
 			" <config>] [ --ostemplate <ostemplate> ]"\
 			" [ --apptemplate <apptemplate<,apptemplate...>> ]"\
@@ -1171,6 +1173,8 @@ int main(int argc, char **argv)
 				command = VZTT_CMD_CREATE_CACHE;
 			else if (strcmp(argv[2], "appcache") == 0)
 				command = VZTT_CMD_CREATE_APPCACHE;
+			else if (strcmp(argv[2], "image") == 0)
+				command = VZTT_CMD_CREATE_PLOOP_IMAGE;
 		} else if (strcmp(argv[1], "update") == 0) {
 			if (strcmp(argv[2], "cache") == 0)
 				command = VZTT_CMD_UPDATE_CACHE;
@@ -1747,6 +1751,16 @@ int main(int argc, char **argv)
 	case VZTT_CMD_LIST_APPCACHE:
 		rc = vztt2_list_appcache(opts_vztt);
 		break;
+	case VZTT_CMD_CREATE_PLOOP_IMAGE: {
+		struct vzctl_create_image_param p = {}; 
+
+		if (argv[ind] == NULL || argv[ind + 1] == NULL)
+			usage(argv[0], VZT_BAD_PARAM);
+
+		if (vzctl2_prepare_root_image(argv[ind+1], argv[ind], &p))
+			rc = VZT_CANT_CREATE;
+		break;
+	}
 	case VZTT_CMD_NONE:
 		usage(argv[0], VZT_BAD_PARAM);
 		break;
