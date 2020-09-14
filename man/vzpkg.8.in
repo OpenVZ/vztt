@@ -25,6 +25,8 @@
 
 \fBvzpkg\fR \fBcreate\fR \fBappcache\fR [\fIoptions\fR]
 
+\fBvzpkg\fR \fBcreate\fR \fimage\fR
+
 \fBvzpkg\fR \fBupdate\fR \fBappcache\fR [\fIoptions\fR]
 
 \fBvzpkg\fR \fBremove\fR \fBappcache\fR [\fIoptions\fR]
@@ -112,6 +114,10 @@ all OS template caches will be removed from the Node.
 \fBcreate\fR \fBappcache\fR
 Create the cache for OS template with application templates.
 Returns error if cache already exists.
+If the specified OS template is not installed on the Node, it will be downloaded from the \fBvzup2date\fR repository.
+.TP
+\fBcreate\fR \fBimage\fR \fB<ostemplate>\fR \fB<path>\fR
+Create a ploop image from the OS template \fIostemplate\fR at \fBpath\fR.
 If the specified OS template is not installed on the Node, it will be downloaded from the \fBvzup2date\fR repository.
 .TP
 \fBupdate\fR \fBappcache\fR
