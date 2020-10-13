@@ -469,7 +469,6 @@ int add_tmpl_envs(
 	return rc;
 }
 
-#define VIRT_OSRELEASE "/proc/sys/kernel/virt_osrelease"
 #define K_VERSION(a,b,c) (((a) << 16) + ((b) << 8) + (c))
 #define OSRELEASE_SIZE 10
 #define STACK_SIZE 2 * 4096
@@ -538,7 +537,7 @@ static int run_clone(void *data)
 {
 	struct clone_params *params;
 	char osrelease[OSRELEASE_SIZE] = "";
-	int dir_fd, fd, osrelease_fd;
+	int dir_fd, fd;
 	int rc = 0;
 
 	params = data;
@@ -546,24 +545,6 @@ static int run_clone(void *data)
 	if (params->osrelease)
 		if ((rc = change_osrelease(params->osrelease, osrelease, OSRELEASE_SIZE)))
 			return rc;
-
-	/* Apply the osrelease hack */
-	if (osrelease[0] != '\0')
-	{
-		if ((osrelease_fd = open(VIRT_OSRELEASE,
-			O_RDWR | O_TRUNC)) < 0) {
-			vztt_logger(-1, errno, "Can't open " VIRT_OSRELEASE);
-			return VZT_CANT_OPEN;
-		}
-		if ((write(osrelease_fd, osrelease,
-			strlen(osrelease))) <= 0)
-		{
-			vztt_logger(-1, errno, "Can't write to " VIRT_OSRELEASE);
-			close(osrelease_fd);
-			return VZT_CANT_WRITE;
-		}
-		close(osrelease_fd);
-	}
 
 	/* open /dev/null in root, because of it is absent in environments */
 	fd = open("/dev/null", O_WRONLY);
