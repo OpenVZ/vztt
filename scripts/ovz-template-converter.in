@@ -103,7 +103,11 @@ if arch != "x86_64" and arch != "x86":
 tarname = ''.join([templateinfo[0], "-", templateinfo[1], "-", arch])
 if (len(templateinfo) == 4):
     tarname += "-" + templateinfo[3]
-tarname += ".plain.ploopv2.tar"
+
+if (vefstype == "simfs"):
+    tarname += ".plain.tar"
+else
+    tarname += ".plain.ploopv2.tar"
 
 tempdir = tempfile.mkdtemp()
 tarpath = ''.join([tempdir, tarname])
