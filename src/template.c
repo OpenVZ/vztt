@@ -921,13 +921,25 @@ int app_tmpl_list_add(struct app_tmpl_list *ls, struct app_tmpl *tmpl)
 /* find app template with name <name> in list <ls> */
 struct app_tmpl_list_el *app_tmpl_list_find(
 		struct app_tmpl_list *ls, 
-		char *name)
+		char *name,
+		int need_reorder)
 {
 	struct app_tmpl_list_el *p;
 
 	for (p = ls->tqh_first; p != NULL; p = p->e.tqe_next) {
-		if (strcmp(name, p->tmpl->name) == 0)
+		if (strcmp(name, p->tmpl->name) == 0) {
+			/* Move found template to the end of the queue.
+			   This will bring the list of templates to the same
+			   order as order of cmdline arguments.
+			   So e.g. scripts of templates will be launched in the
+			   same order as templates are listed in the cmdline
+			*/
+			if (need_reorder == 1) {
+				TAILQ_REMOVE(ls, p, e);
+				TAILQ_INSERT_TAIL(ls, p, e);
+			}
 			return p;
+		}
 	}
 	return NULL;
 }

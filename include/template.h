@@ -226,7 +226,8 @@ int app_tmpl_list_add(struct app_tmpl_list *ls, struct app_tmpl *tmpl);
 /* find app template with name <name> in list <ls> */
 struct app_tmpl_list_el *app_tmpl_list_find(
 		struct app_tmpl_list *ls, 
-		char *name);
+		char *name,
+		int need_reorder);
 
 /* remove element <el> from list <ls> and return pointer to previous elem
    This function does not free content */

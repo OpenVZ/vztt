@@ -751,7 +751,7 @@ int tmplset_init(
 
 	string_list_init(&tmpls);
 	string_list_for_each(apps, p) {
-		a = app_tmpl_list_find(&(*tmpl)->avail_apps, p->s);
+		a = app_tmpl_list_find(&(*tmpl)->avail_apps, p->s, 0);
 		if (a == NULL) {
 			not_found = 1;
 			string_list_add(&tmpls, p->s);
@@ -780,7 +780,7 @@ int tmplset_init(
             /* find available apps in <apps> and
             copy to used apps list in success*/
             string_list_for_each(apps, p) {
-                    a = app_tmpl_list_find(&(*tmpl)->avail_apps, p->s);
+                    a = app_tmpl_list_find(&(*tmpl)->avail_apps, p->s, 0);
                     if (a == NULL) {
                             vztt_logger(0, 0, "App template %s not found", p->s);
                             rc = VZT_TMPL_NOT_EXIST;
@@ -913,7 +913,14 @@ int tmplset_mark(
 		return 0;
 	}
 
+	struct string_list found;
+	string_list_init(&found);
+
 	string_list_for_each(ls, p) {
+		if (string_list_find(&found, p->s)) {
+			continue;
+		}
+		string_list_add(&found, p->s);
 		if (mask & TMPLSET_MARK_OS) {
 			if (strcmp(t->os->name, p->s) == 0)
 				t->os->marker = 1;
@@ -925,13 +932,13 @@ int tmplset_mark(
 			}
 		}
 		if (mask & TMPLSET_MARK_AVAIL_APP_LIST) {
-			if ((a = app_tmpl_list_find(&t->avail_apps, p->s))) {
+			if ((a = app_tmpl_list_find(&t->avail_apps, p->s, 1))) {
 				a->tmpl->marker = 1;
 				continue;
 			}
 		}
 		if (mask & TMPLSET_MARK_USED_APP_LIST) {
-			if ((a = app_tmpl_list_find(&t->used_apps, p->s))) {
+			if ((a = app_tmpl_list_find(&t->used_apps, p->s, 1))) {
 				a->tmpl->marker = 1;
 				continue;
 			}
@@ -1702,7 +1709,7 @@ int tmplset_find_upgrade(
 			   in packages mode */
 			continue;
 		}
-		d = app_tmpl_list_find(&(*dst)->avail_apps, s->tmpl->name);
+		d = app_tmpl_list_find(&(*dst)->avail_apps, s->tmpl->name, 0);
 		if (d != NULL) {
 			rc = app_tmpl_list_add(&(*dst)->used_apps, d->tmpl);
 			if (rc)
@@ -1823,7 +1830,7 @@ int tmplset_check_for_update(
 			if (strcmp(t->os->name, s->s) == 0)
 				continue;
 		}
-		if (app_tmpl_list_find(&t->used_apps, s->s) == NULL) {
+		if (app_tmpl_list_find(&t->used_apps, s->s, 0) == NULL) {
 			if (rc == 0)
 				vztt_logger(0, 0, "Template(s) "\
 					"does not installed into CT:");

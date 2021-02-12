@@ -1662,7 +1662,7 @@ int vztt2_remove_app_template(char *app, struct options_vztt *opts_vztt)
 		goto cleanup_0;
 
 	/* check that this template really exist */
-	if ((a = app_tmpl_list_find(&tmpl->avail_apps, app)) == NULL) {
+	if ((a = app_tmpl_list_find(&tmpl->avail_apps, app, 0)) == NULL) {
 		vztt_logger(0, 0, "EZ apptemplate %s for %s does not exist", \
 			app, opts_vztt->for_obj);
 		rc = VZT_TMPL_NOT_EXIST;
