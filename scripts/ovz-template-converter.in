@@ -106,7 +106,7 @@ if (len(templateinfo) == 4):
 
 if (vefstype == "simfs"):
     tarname += ".plain.tar"
-else
+else:
     tarname += ".plain.ploopv2.tar"
 
 tempdir = tempfile.mkdtemp()
