@@ -25,13 +25,13 @@
 
 \fBvzpkg\fR \fBcreate\fR \fBappcache\fR [\fIoptions\fR]
 
-\fBvzpkg\fR \fBcreate\fR \fimage\fR
-
 \fBvzpkg\fR \fBupdate\fR \fBappcache\fR [\fIoptions\fR]
 
 \fBvzpkg\fR \fBremove\fR \fBappcache\fR [\fIoptions\fR]
 
 \fBvzpkg\fR \fBlist\fR \fBappcache\fR
+
+\fBvzpkg\fR \fBcreate\fR \fBimage\fR \fB<ostemplate>\fR \fB<path>\fR
 
 \fBvzpkg\fR \fBinfo\fR [\fIoptions\fR] [\fI-F\fR \fIostemplate\fR | \fICT\ ID\fR | \fICT\ NAME\fR] \fIobject\fR | \fICT\ ID\fR | \fICT\ NAME\fR [\fIparameter\fR ...]
 
