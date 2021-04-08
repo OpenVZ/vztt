@@ -1555,6 +1555,7 @@ int main(int argc, char **argv)
 		}
 		break;
 	case VZTT_CMD_UPDATE_CACHE:
+		opts_vztt->flags |= OPT_VZTT_UPDATE_CACHE;
 		if (argc == ind) {
 			/* for all base OS template */
 			if ((rc = vztt_get_all_base(&base_os)))
