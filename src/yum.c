@@ -274,6 +274,10 @@ static int yum_print_repos(struct YumTransaction *yum, FILE *fp)
 		if (rc)
 			return rc;
 		fprintf(fp, "\nenabled=1\n");
+		fprintf(fp, "\nsslcacert=/etc/rhel/redhat-uep.pem\n");
+		fprintf(fp, "\nsslclientkey=/etc/rhel/sslclientkey.pem\n");
+		fprintf(fp, "\nsslclientcert=/etc/rhel/sslclientcert.pem\n");
+
 		if (yum->vzttproxy)
 			fprintf(fp, "failovermethod=priority\n");
 		string_list_clean(&urls);
