@@ -227,8 +227,7 @@ int create_ploop(char *ploop_dir, unsigned long long diskspace_kb, struct option
 {
 	int rc = 0;
 	char path[PATH_MAX+1];
-	char fstype[] = "ext4";
-	struct ploop_create_param param = {};
+	struct ploop_create_param param = {.fstype = ""};
 
 	progress(PROGRESS_CREATE_PLOOP, 0, opts_vztt->progress_fd);
 
@@ -242,7 +241,6 @@ int create_ploop(char *ploop_dir, unsigned long long diskspace_kb, struct option
 	else
 		param.fmt_version = PLOOP_FMT_V1;
 	param.size = (__u64) diskspace_kb * 2; // 512B blocks
-	param.fstype = fstype;
 
 	/* use custom cluster block size */
 	param.blocksize = get_ploop_block_size("PLOOP_BLOCK_SIZE");
