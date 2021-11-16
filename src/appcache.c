@@ -625,7 +625,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		if ((rc = create_ploop_dir(ve_private, &ploop_dir)))
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype, &ploop_dir)))
 			goto cleanup_4;
 
 		/*disable quota*/
@@ -1079,7 +1079,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		if ((rc = create_ploop_dir(ve_private, &ploop_dir)))
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype, &ploop_dir)))
 			goto cleanup_4;
 
 		/*disable quota*/
@@ -1567,19 +1567,16 @@ int info_appcache(struct options_vztt *opts_vztt)
 	/* Ignore the empty apptemplate list case */
 	if ((rc != 0 && rc != VZT_BAD_PARAM) || !os_app_name)
 		goto cleanup;
-	else
-		rc = 0;
 
+	rc = 0;
 	/* Try to find the cache with all archive types,
 		but with special case for ploop v2: will
 		ignore old ploop cache */
-	if (get_cache_type(&gc) & VZT_CACHE_TYPE_PLOOP_V2 &&
-		tmpl_get_cache_tar_by_type(path, sizeof(path),
-		VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP_V2,
-		gc.template_dir, os_app_name) != 0)
-			rc = VZT_TMPL_NOT_CACHED;
-	else if (tmpl_get_cache_tar(&gc, path, sizeof(path), gc.template_dir,
-		os_app_name) != 0)
+	if (gc.veformat && tmpl_get_cache_tar_by_type(path, sizeof(path), get_cache_type(&gc),
+				gc.template_dir, os_app_name) != 0) {
+		rc = VZT_TMPL_NOT_CACHED;
+	} else if (tmpl_get_cache_tar(&gc, path, sizeof(path), gc.template_dir,
+				os_app_name) != 0)
 		rc = VZT_TMPL_NOT_CACHED;
 
 	if (rc == VZT_TMPL_NOT_CACHED)

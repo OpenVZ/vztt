@@ -54,7 +54,8 @@
 #include "ploop.h"
 #include "transaction.h"
 
-#define IMAGE_NAME		"root.hds"
+#define PLOOP_IMAGE_NAME	"root.hds"
+#define QCOW_IMAGE_NAME		"root.hdd"
 #define DESCRIPTOR_NAME		"DiskDescriptor.xml"
 
 static int copy_data(
@@ -82,13 +83,14 @@ static int open_ploop_di(char *ploop_dir, struct ploop_disk_images_data **di)
 	int rc = 0;
 	char path[PATH_MAX+1];
 
-	snprintf(path, sizeof(path), "%s/"DESCRIPTOR_NAME,
-			ploop_dir);
+	snprintf(path, sizeof(path), "%s/"DESCRIPTOR_NAME, ploop_dir);
+	if (access(path, F_OK))
+		snprintf(path, sizeof(path), "%s/" QCOW_IMAGE_NAME, ploop_dir);
 
 	if ((rc = ploop_open_dd(di, path)))
 	{
-		vztt_logger(0, 0, "Failed to read ploop disk descriptor %s: %s %i",
-			ploop_dir, ploop_get_last_error(), rc);
+		vztt_logger(0, 0, "Failed to open ploop %s: %s %i",
+			path, ploop_get_last_error(), rc);
 		rc = VZT_PLOOP_ERROR;
 	}
 
@@ -223,15 +225,20 @@ static unsigned long get_ploop_block_size(const char *ploop_env)
 	return block_size;
 }
 
-int create_ploop(char *ploop_dir, unsigned long long diskspace_kb, struct options_vztt *opts_vztt)
+int create_ploop(char *ploop_dir, unsigned long long diskspace_kb,
+		struct options_vztt *opts_vztt)
 {
 	int rc = 0;
 	char path[PATH_MAX+1];
-	struct ploop_create_param param = {.fstype = ""};
+	struct ploop_create_param param = {
+		.fstype = "",
+		.image_fmt = opts_vztt->vefstype && !strcmp(opts_vztt->vefstype, "qcow2") ?
+				QCOW_FMT : PLOOP_FMT,
+	};
 
 	progress(PROGRESS_CREATE_PLOOP, 0, opts_vztt->progress_fd);
-
-	snprintf(path, sizeof(path), "%s/"IMAGE_NAME, ploop_dir);
+	snprintf(path, sizeof(path), "%s/%s", ploop_dir,
+			param.image_fmt == QCOW_FMT ? QCOW_IMAGE_NAME : PLOOP_IMAGE_NAME);
 
 	/* create ploop image */
 	param.image = path;
@@ -326,6 +333,7 @@ int pack_ploop(char *ploop_dir, char *to_file, struct options_vztt *opts_vztt)
 	char path[PATH_MAX+1];
 	char cmd[2*PATH_MAX+1];
 	char *pwd = NULL;
+	const char *files;
 
 	if (getcwd(path, sizeof(path)))
 		pwd = strdup(path);
@@ -334,7 +342,13 @@ int pack_ploop(char *ploop_dir, char *to_file, struct options_vztt *opts_vztt)
 		vztt_logger(0, errno, "chdir(%s) error", ploop_dir);
 		return VZT_CANT_CHDIR;
 	}
-	get_pack_cmd(cmd, sizeof(cmd), to_file, ".", "--numeric-owner");
+
+	if (access(DESCRIPTOR_NAME, F_OK) == 0)
+		files = PLOOP_IMAGE_NAME " templates " DESCRIPTOR_NAME;
+	else
+		files = QCOW_IMAGE_NAME " templates";
+
+	get_pack_cmd(cmd, sizeof(cmd), to_file, files, "--numeric-owner");
 
 	if ((rc = exec_cmd(cmd, (opts_vztt->flags & OPT_VZTT_QUIET)))) {
 		vztt_logger(0, errno, "system(%s) error", cmd);
@@ -375,11 +389,16 @@ cleanup_0:
 	return rc;
 }
 
-int create_ploop_dir(char *ve_private, char **ploop_dir) {
+int create_ploop_dir(char *ve_private, const char *fstype, char **ploop_dir) {
 	// root.hdd hardcoded in vzctl
 	if (((*ploop_dir) = malloc(strlen(ve_private) + 10)) == NULL) {
 		vztt_logger(0, errno, "Cannot alloc memory");
 		return VZT_CANT_ALLOC_MEM;
+	}
+
+	if (fstype && !strcmp(fstype, "qcow2")) {
+		sprintf((*ploop_dir), "%s", ve_private);
+		return 0;
 	}
 
 	sprintf((*ploop_dir), "%s/root.hdd", ve_private);

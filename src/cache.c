@@ -84,7 +84,6 @@ static int create_cache(
 	char *ve_private_template = NULL;
 	FILE *fp;
 	void *lockdata, *velockdata, *cache_lockdata;
-	char vzfs[MAXVERSIONLEN];
 	int backup;
 
 	struct package_list installed;
@@ -337,15 +336,17 @@ static int create_cache(
 	{
 		//ploop mode
 		struct ve_config vc;
+		// FIXME
+		if (!opts_vztt->vefstype && gc.veformat & VZ_T_QCOW2)
+			opts_vztt->vefstype = strdup("qcow2");
 
-		if ((rc = create_ploop_dir(ve_private, &ploop_dir)))
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype,  &ploop_dir)))
 			goto cleanup_3;
 
 		/*read CT from config*/
 		ve_config_init(&vc);
 		if ((rc = ve_config_read(ctid, &gc, &vc, 0)))
 			return rc;
-
 		/*create ploop device*/
 		if ((rc = create_ploop(ploop_dir, vc.diskspace, opts_vztt))) {
 			vztt_logger(0, 0, "Cannot create ploop device");
@@ -370,9 +371,6 @@ static int create_cache(
 	if ((rc = pm_set_root_dir(to, ve_root)))
 		goto cleanup_3;
 
-	if ((rc = vefs_get_link(gc.veformat, vzfs, sizeof(vzfs))))
-		goto cleanup_3;
-
 	/* Create .ve.layout symlink */
 	if ((rc = create_ve_layout(gc.velayout, ve_private)))
 		goto cleanup_3;
@@ -392,7 +390,7 @@ static int create_cache(
 	/* cache will created only in vz3 layout */
 	if ((rc = do_vzctl("mount", ctid, -1,
 		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
-		DO_VZCTL_LOGGER) < 0)) {
+		DO_VZCTL_LOGGER))) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_3;
 	}
@@ -441,7 +439,7 @@ static int create_cache(
 
 	if ((rc = do_vzctl("start", ctid, -1,
 		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
-		DO_VZCTL_LOGGER) < 0)) {
+		DO_VZCTL_LOGGER))) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_5;
 	}
@@ -565,15 +563,15 @@ static int create_cache(
 		/* move 'templates' to directory with ploop device. it should be packed
 		 together with ploop */
 
-		char *move_dir[] = {"/bin/mv", ve_private_template, ploop_dir, NULL};
-		if ((rc = execv_cmd(move_dir, (opts_vztt->flags & OPT_VZTT_QUIET), 1)))
-			vztt_logger(0, 0, "Failed to move 'template' directory");
-		else
-		{
-			remove_directory(ve_root);
+		snprintf(cmd, sizeof(cmd), "%s/templates", ploop_dir);
+		if (rename(ve_private_template, cmd))
+			vztt_logger(0, 0, "Failed to move 'templates' directory");
+		else {
 			/*pack ploop device to archive*/
 			rc = pack_ploop(ploop_dir, cachename, opts_vztt);
 		}
+
+		remove_directory(ve_root);
 	} else {
 		if (chdir(ve_private) == -1) {
 			vztt_logger(0, errno, "chdir(%s) failed", ve_private);
@@ -819,7 +817,7 @@ int update_cache(
 
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		if ((rc = create_ploop_dir(ve_private, &ploop_dir)))
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype, &ploop_dir)))
 			goto cleanup_3;
 
 		/*disable quota*/
@@ -890,7 +888,7 @@ int update_cache(
 
 	if ((rc = do_vzctl("start", ctid, -1,
 		(opts_vztt->debug < 4 ? DO_VZCTL_QUIET : DO_VZCTL_NONE) |
-		DO_VZCTL_LOGGER) < 0)) {
+		DO_VZCTL_LOGGER))) {
 		rc = VZT_CANT_EXEC;
 		goto cleanup_3;
 	}
