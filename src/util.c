@@ -1721,8 +1721,6 @@ unsigned long tmpl_get_cache_type(char *path)
 		cache_type |= VZT_CACHE_TYPE_PLOOP_V2;
 	else if (strstr(start, PLOOP_SUFFIX "."))
 		cache_type |= VZT_CACHE_TYPE_PLOOP;
-	else
-		cache_type |= VZT_CACHE_TYPE_HOSTFS;
 
 	if (strstr(start, SIMFS_SUFFIX "."))
 		cache_type |= VZT_CACHE_TYPE_SIMFS;
@@ -1865,8 +1863,8 @@ int tmpl_get_cache_tar(
 		/* Supported combinations: simfs + vz4, vz4 + vz4, ploop + ext4 */
 		cache_types[0] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP_V2;
 		cache_types[1] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP;
-		cache_types[2] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_HOSTFS;
-		cache_types[3] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_QCOW2;
+		cache_types[2] = VZT_CACHE_TYPE_SIMFS;
+		cache_types[3] = VZT_CACHE_TYPE_QCOW2;
 		cache_types[4] = 0;
 	}
 	else
@@ -1911,8 +1909,8 @@ int tmpl_callback_cache_tar(
 		/* Supported combinations: simfs + vz4, vz4 + vz4, ploop + ext4 */
 		cache_types[0] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP_V2;
 		cache_types[1] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP;
-		cache_types[2] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_HOSTFS;
-		cache_types[3] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_QCOW2;
+		cache_types[2] = VZT_CACHE_TYPE_SIMFS;
+		cache_types[3] = VZT_CACHE_TYPE_QCOW2;
 		cache_types[4] = 0;
 	}
 	else

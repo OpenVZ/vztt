@@ -449,9 +449,6 @@ unsigned long get_cache_type(struct global_config *gc)
 			type |= VZT_CACHE_TYPE_PLOOP_V2;
 		else
 			type |= VZT_CACHE_TYPE_PLOOP;
-	else
-		type |= VZT_CACHE_TYPE_HOSTFS;
-
 	return type;
 }
 
