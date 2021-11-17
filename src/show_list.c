@@ -1027,8 +1027,7 @@ int vztt2_get_cache_vzdir(
 			opts_vztt->flags)))
 		goto cleanup_0;
 
-	if (tmpl_get_cache_tar_by_type(cache_path, size,
-		VZT_CACHE_TYPE_HOSTFS,
+	if (tmpl_get_cache_tar_by_type(cache_path, size, 0,
 		gc.template_dir, ostemplate) == 0)
 	{
 		if ((rc = read_tarball(cache_path, &vzpackages)))

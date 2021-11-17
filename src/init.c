@@ -35,6 +35,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <signal.h>
+#include <arpa/inet.h>
 
 #ifdef IF_LOOP
 #include <sys/socket.h>

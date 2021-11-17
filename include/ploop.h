@@ -42,4 +42,4 @@ int create_ploop_cache(
 	char *tmpdir,
 	struct options_vztt *opts_vztt);
 
-int create_ploop_dir(char *ve_private, char **ploop_dir);
+int create_ploop_dir(char *ve_private, const char *vefstype, char **ploop_dir);

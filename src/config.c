@@ -420,8 +420,9 @@ static int global_config_reader(char *var, char *val, void *data)
 			return VZT_UNKNOWN_VEFORMAT;
 		}
 
-		if (gc->veformat != VZ_T_VZFS0 && \
-				gc->veformat != VZ_T_EXT4) {
+		if (gc->veformat != VZ_T_VZFS0 &&
+				gc->veformat != VZ_T_EXT4 &&
+				gc->veformat != VZ_T_QCOW2) {
 			vztt_logger(0, 0, "Unknown %s: %s", var, val);
 			return VZT_UNKNOWN_VEFORMAT;
 		}
@@ -436,6 +437,10 @@ static int global_config_reader(char *var, char *val, void *data)
 unsigned long get_cache_type(struct global_config *gc)
 {
 	unsigned long type = 0;
+
+	if (gc->veformat == VZ_T_QCOW2)
+		return VZT_CACHE_TYPE_QCOW2;
+
 	if (gc->veformat == VZ_T_VZFS0)
 		type |= VZT_CACHE_TYPE_SIMFS;
 
@@ -444,9 +449,6 @@ unsigned long get_cache_type(struct global_config *gc)
 			type |= VZT_CACHE_TYPE_PLOOP_V2;
 		else
 			type |= VZT_CACHE_TYPE_PLOOP;
-	else
-		type |= VZT_CACHE_TYPE_HOSTFS;
-
 	return type;
 }
 
@@ -512,6 +514,8 @@ static int process_fstype_layout(struct global_config *gc, struct options_vztt *
 		gc->veformat = VZ_T_VZFS0;
 		gc->velayout = VZT_VE_LAYOUT5;
 	}
+	else if (gc->veformat == VZ_T_QCOW2)
+		gc->velayout = VZT_VE_LAYOUT5;
 	else
 	{
 		vztt_logger(0, 0, "Unknown VEFSTYPE: %s",

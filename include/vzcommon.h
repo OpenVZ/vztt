@@ -62,6 +62,7 @@
 #define PLOOP_SUFFIX		".ploop"
 #define PLOOP_V2_SUFFIX		".ploopv2"
 #define SIMFS_SUFFIX		".plain"
+#define QCOW2_SUFFIX		".qcow2"
 
 /* TODO: defined in vzctl/libvzctl.h */
 #undef VZ_DIR
@@ -122,12 +123,12 @@
 #define VZT_CACHE_TYPE_SIMFS	(1 << 1)
 #define VZT_CACHE_TYPE_FSMASK	0x07
 
-#define VZT_CACHE_TYPE_HOSTFS	(1 << 4)
 #define VZT_CACHE_TYPE_PLOOP	(1 << 5)
 #define VZT_CACHE_TYPE_PLOOP_V2	(1 << 6)
-#define VZT_CACHE_TYPE_STMASK	0x70
+#define VZT_CACHE_TYPE_QCOW2	(1 << 7)
+#define VZT_CACHE_TYPE_STMASK	0xf0
 #define VZT_CACHE_TYPE_ALL (VZT_CACHE_TYPE_SIMFS | \
-	VZT_CACHE_TYPE_HOSTFS | VZT_CACHE_TYPE_PLOOP | VZT_CACHE_TYPE_PLOOP_V2)
+	VZT_CACHE_TYPE_PLOOP | VZT_CACHE_TYPE_PLOOP_V2 | VZT_CACHE_TYPE_QCOW2)
 
 #define VZCACHE 	1
 #define VZCACHE2	2

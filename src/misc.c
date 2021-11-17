@@ -324,24 +324,9 @@ int vztt2_get_cache_status(
 				isup2date_all = 0;
 		}
 
-		/* Then check for VZFS */
-		if (tmpl_get_cache_tar_by_type(buf, sizeof(buf),
-			VZT_CACHE_TYPE_HOSTFS,
-			gc.template_dir, ostemplate) == 0)
-		{
-			cache_found = 1;
-
-			if ((rc = is_cache_tarball_up2date(&gc, &tc, tmpl, opts_vztt,
-				buf, &isup2date)))
-				goto cleanup_2;
-
-			if (!isup2date)
-				isup2date_all = 0;
-		}
-
 		/* Latest check for SIMFS */
 		if (tmpl_get_cache_tar_by_type(buf, sizeof(buf),
-			VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_HOSTFS,
+			VZT_CACHE_TYPE_SIMFS,
 			gc.template_dir, ostemplate) == 0)
 		{
 			cache_found = 1;
