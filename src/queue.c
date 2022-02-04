@@ -542,9 +542,17 @@ struct package_list_el *package_list_remove(
 
 	/* remove content */
 	erase_structp(el->p);
-	TAILQ_REMOVE(ls, el, e);
-	free((void *)el);
-
+	if (el->e.tqe_next == NULL ) {
+		TAILQ_REMOVE(ls, el, e);
+		/* Somehow this free() breaks our queue */
+		free((void *)el);
+		prev->e.tqe_next = NULL;
+	}
+	else {
+		TAILQ_REMOVE(ls, el, e);
+		free((void *)el);
+	}
+  
 	return prev;
 }
 
