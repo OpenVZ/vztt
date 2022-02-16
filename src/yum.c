@@ -381,8 +381,12 @@ static int yum_create_config(struct YumTransaction *yum)
 	else {
 		if (yum->debug == 0)
 			dlevel = 0;
-		else
+		else {
 			dlevel = yum->debug*2;
+			/* No sense in > 10 for yum, this will only produce a warning */
+			if (dlevel > 10)
+            	dlevel = 10;
+        }
 	}
 	fprintf(fd, "debuglevel=%d\n", dlevel);
 	fprintf(fd, "errorlevel=%d\n", dlevel);
