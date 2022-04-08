@@ -2156,7 +2156,11 @@ int create_veroot_unjump_checker(struct Transaction *pm, struct string_list *env
 	if (strcmp(ARCH_X86_64, pm->pkgarch) == 0)
 		checker = CHECKER;
 	else
+#ifndef SKIP_CHECKER32
 		checker = CHECKER32;
+#else
+		return vztt_error(VZT_TMPL_UNSUPPORTED_ARCH, 1, "arch %s is not supported", pm->pkgarch);
+#endif
 
 	/* Install checker to environments */
 	snprintf(buf, sizeof(buf), "%s/%s", pm->envdir, CHECKER_DIR);
