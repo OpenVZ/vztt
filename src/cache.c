@@ -154,7 +154,7 @@ static int create_cache(
 		return rc;
 
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
-				get_cache_type(&gc), gc.template_dir, tmpl->os->name);
+				get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype, gc.template_dir, tmpl->os->name);
 	if ((cachename = strdup(path)) == NULL) {
 		vztt_logger(0, errno, "Cannot alloc memory");
 		rc = VZT_CANT_ALLOC_MEM;
@@ -185,8 +185,8 @@ static int create_cache(
 		goto cleanup_0;
 	}
 
-        /* Check for cache_type supported */
-	if ((tmpl->base->cache_type & get_cache_type(&gc)) == 0) {
+	/* Check for cache_type supported */
+	if ((tmpl->base->cache_type & get_cache_type(&gc, opts_vztt->image_format)) == 0) {
 		vztt_logger(0, 0, "The template is not compatible with the " \
 			"VEFSTYPE used");
 		rc = VZT_TMPL_BROKEN;
@@ -223,10 +223,11 @@ static int create_cache(
 	}
 
 	/* Skip create just convert image if old cache exist */
-	if (get_cache_type(&gc) & VZT_CACHE_TYPE_PLOOP_V2) {
+	if (get_cache_type(&gc, opts_vztt->image_format) & VZT_CACHE_TYPE_PLOOP_V2) {
 		char old[PATH_MAX+1];
 		tmpl_get_cache_tar_name(old, sizeof(old), tc.archive,
 				VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP,
+				opts_vztt->vefstype,
 				gc.template_dir, tmpl->os->name);
 
 		if (access(old, F_OK) == 0) {
@@ -336,11 +337,11 @@ static int create_cache(
 	{
 		//ploop mode
 		struct ve_config vc;
-		// FIXME
-		if (!opts_vztt->vefstype && gc.veformat & VZ_T_QCOW2)
-			opts_vztt->vefstype = strdup("qcow2");
 
-		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype,  &ploop_dir)))
+		if (!opts_vztt->vefstype)
+			opts_vztt->vefstype = (gc.veformat & VZ_T_EXT4) ? strdup("ext4") : strdup("xfs");
+
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->image_format,  &ploop_dir)))
 			goto cleanup_3;
 
 		/*read CT from config*/
@@ -726,7 +727,7 @@ int update_cache(
 
 	/* if cache file does not exist - run create_cache */
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
-				get_cache_type(&gc), gc.template_dir, tmpl->os->name);
+				get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype, gc.template_dir, tmpl->os->name);
 	if (access(path, F_OK) != 0)
 	{
 		/* Recreate cache here for the old-ploop format case */
@@ -817,7 +818,7 @@ int update_cache(
 
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype, &ploop_dir)))
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->image_format, &ploop_dir)))
 			goto cleanup_3;
 
 		/*disable quota*/
@@ -1116,10 +1117,6 @@ int vztt2_update_cache(
 	return 0;
 }
 
-
-
-
-
 /* remove cache file */
 int vztt_remove_cache(
 	char *ostemplate,
@@ -1136,7 +1133,6 @@ int vztt_remove_cache(
 	vztt_options_free(opts_vztt);
 	return rc;
 }
-
 
 int lock_and_remove_cache(const char *path, void *data)
 {

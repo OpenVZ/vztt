@@ -296,6 +296,7 @@ int vztt2_get_cache_status(
 		/* Check for ploopv2 first */
 		if (tmpl_get_cache_tar_by_type(buf, sizeof(buf),
 			VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP_V2,
+			opts_vztt->vefstype,
 			gc.template_dir, ostemplate) == 0 &&
 			ploop_is_large_disk_supported())
 		{
@@ -312,6 +313,7 @@ int vztt2_get_cache_status(
 		/* Then check for ploop */
 		if (tmpl_get_cache_tar_by_type(buf, sizeof(buf),
 			VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP,
+			opts_vztt->vefstype,
 			gc.template_dir, ostemplate) == 0)
 		{
 			cache_found = 1;
@@ -327,6 +329,7 @@ int vztt2_get_cache_status(
 		/* Latest check for SIMFS */
 		if (tmpl_get_cache_tar_by_type(buf, sizeof(buf),
 			VZT_CACHE_TYPE_SIMFS,
+			opts_vztt->vefstype,
 			gc.template_dir, ostemplate) == 0)
 		{
 			cache_found = 1;
@@ -340,7 +343,8 @@ int vztt2_get_cache_status(
 	else
 	{
 		if (tmpl_get_cache_tar_by_type(buf, sizeof(buf),
-			get_cache_type(&gc), gc.template_dir, ostemplate) == 0)
+			get_cache_type(&gc, opts_vztt->image_format),
+			opts_vztt->vefstype, gc.template_dir, ostemplate) == 0)
 		{
 			cache_found = 1;
 

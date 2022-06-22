@@ -59,10 +59,15 @@
 #define TARLZ4_SUFFIX		".tar.lz4"
 #define TARLZ4_SUFFIX_LEN	strlen(TARLZ4_SUFFIX)
 
-#define PLOOP_SUFFIX		".ploop"
-#define PLOOP_V2_SUFFIX		".ploopv2"
-#define SIMFS_SUFFIX		".plain"
-#define QCOW2_SUFFIX		".qcow2"
+#define PLOOP_FORMAT		"ploop"
+#define PLOOP_V2_FORMAT		"ploopv2"
+#define SIMFS_FORMAT		"plain"
+#define QCOW2_FORMAT		"qcow2"
+
+#define PLOOP_SUFFIX		"." PLOOP_FORMAT
+#define PLOOP_V2_SUFFIX		"." PLOOP_V2_FORMAT
+#define SIMFS_SUFFIX		"." SIMFS_FORMAT
+#define QCOW2_SUFFIX		"." QCOW2_FORMAT
 
 /* TODO: defined in vzctl/libvzctl.h */
 #undef VZ_DIR

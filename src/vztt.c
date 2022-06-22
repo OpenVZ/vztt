@@ -128,6 +128,7 @@ enum {
 	PARAM_AVAILABLE = 3,
 	PARAM_VEFSTYPE = 4,
 	PARAM_PROGRESS_FD = 5,
+	PARAM_VEIMGFMT = 6,
 };
 
 /* global - use in vztt_logger */
@@ -192,56 +193,61 @@ void usage(const char * progname, int rc)
 /*	fprintf(stderr,"%s repair [options] <OS template> <vzpackages file>\n", progname);*/
 /*	fprintf(stderr,"%s get_backup_apps [options] <veprivate> <veconfig>\n", progname);*/
 	fprintf(stderr,"  Options:\n");
-	fprintf(stderr,"    -f/--force           force option\n");
-	fprintf(stderr,"    -w/--with-depends    remove also packages depending on that\n");
-	fprintf(stderr,"    -n/--check-only      check only mode\n");
-	fprintf(stderr,"    -q/--quiet           quiet mode\n");
-	fprintf(stderr,"    -d/--debug n         set debug level. Practical range : 0-5\n");
-	fprintf(stderr,"                         Default value is 0.\n");
-	fprintf(stderr,"    -p/--packages        interpret objects as packages name\n");
-	fprintf(stderr,"                         (instead of as templates by default)\n");
-	fprintf(stderr,"    -g/--groups          interpret objects as yum groups\n");
-	fprintf(stderr,"                         (only for rpm-based templates/containers)\n");
-	fprintf(stderr,"    -C/--cache           Seek entirely in local packages cache,\n");
-	fprintf(stderr,"                         don't get new packages from network.\n");
-	fprintf(stderr,"                         If something needed is not available locally -\n");
-	fprintf(stderr,"                         %s will fail.\n", progname);
-	fprintf(stderr,"    -u/--custom-pkg      report list of packages, installed into CT but\n");
-	fprintf(stderr,"                         are not available in the template repositories\n");
-	fprintf(stderr,"                         (for list command)\n");
+	fprintf(stderr,	"    -f/--force           force option\n");
+	fprintf(stderr,	"    -w/--with-depends    remove also packages depending on that\n");
+	fprintf(stderr,	"    -n/--check-only      check only mode\n");
+	fprintf(stderr,	"    -q/--quiet           quiet mode\n");
+	fprintf(stderr,	"    -d/--debug n         set debug level. Practical range : 0-5\n");
+	fprintf(stderr,	"                         Default value is 0.\n");
+	fprintf(stderr,	"    -p/--packages        interpret objects as packages name\n");
+	fprintf(stderr,	"                         (instead of as templates by default)\n");
+	fprintf(stderr,	"    -g/--groups          interpret objects as yum groups\n");
+	fprintf(stderr,	"                         (only for rpm-based templates/containers)\n");
+	fprintf(stderr,	"    -C/--cache           Seek entirely in local packages cache,\n");
+	fprintf(stderr,	"                         don't get new packages from network.\n");
+	fprintf(stderr,	"                         If something needed is not available locally -\n");
+	fprintf(stderr,	"                         %s will fail.\n", progname);
+	fprintf(stderr,	"    -u/--custom-pkg      report list of packages, installed into CT but\n");
+	fprintf(stderr,	"                         are not available in the template repositories\n");
+	fprintf(stderr,	"                         (for list command)\n");
 	fprintf(stderr,"    -S/--with-summary    to print list of templates/packages with summary\n");
-	fprintf(stderr,"    -r/--remote          force to use remote metadata.\n");
-	fprintf(stderr,"    -O/--os              execute for OS templates only\n");
-	fprintf(stderr,"    -A/--app             execute for application templates only\n");
-	fprintf(stderr,"    -F/--for-os <ostemplate>/<VEID>/<VENAME>\n");
-	fprintf(stderr,"                         specify OS template or CT\n");
-	fprintf(stderr,"    -c/--cached          skip cacheable OS templates missed in the cache\n");
-	fprintf(stderr,"    -i/--pkgid           to print system-wide unique templated id\n");
-	fprintf(stderr,"                         instead of template name\n");
-	fprintf(stderr,"    -k/--clean-packages  clean local package cache\n");
-	fprintf(stderr,"    -t/--template        replaces --clean-template (deprecated)\n");
-	fprintf(stderr,"                         remove unused packages from the template area\n");
-	fprintf(stderr,"                         (for the clean command only)\n");
-	fprintf(stderr,"                         update all templates installed in the Container\n");
-	fprintf(stderr,"                         (for the update command only)\n");
-	fprintf(stderr,"    -a/--clean-all       clean both\n");
-	fprintf(stderr,"    -e/--expanded        use 'expanded' update mode:\n");
-	fprintf(stderr,"                         upgrade for yum and dist-upgrade for apt-get\n");
-	fprintf(stderr,"    -I/--interactive     use interactive mode of debian package management\n");
-	fprintf(stderr,"    -s/--force-shared    force action for template area on shared partition case\n");
-	fprintf(stderr,"    -P/--separate        execute transaction for each template separately\n");
-	fprintf(stderr,"    -v/--no-vzup2date    Don't call vzup2date to "\
+	fprintf(stderr,	"    -r/--remote          force to use remote metadata.\n");
+	fprintf(stderr,	"    -O/--os              execute for OS templates only\n");
+	fprintf(stderr,	"    -A/--app             execute for application templates only\n");
+	fprintf(stderr,	"    -F/--for-os <ostemplate>/<VEID>/<VENAME>\n");
+	fprintf(stderr,	"                         specify OS template or CT\n");
+	fprintf(stderr,	"    -c/--cached          skip cacheable OS templates missed in the cache\n");
+	fprintf(stderr,	"    -i/--pkgid           to print system-wide unique templated id\n");
+	fprintf(stderr,	"                         instead of template name\n");
+	fprintf(stderr,	"    -k/--clean-packages  clean local package cache\n");
+	fprintf(stderr,	"    -t/--template        replaces --clean-template (deprecated)\n");
+	fprintf(stderr,	"                         remove unused packages from the template area\n");
+	fprintf(stderr,	"                         (for the clean command only)\n");
+	fprintf(stderr,	"                         update all templates installed in the Container\n");
+	fprintf(stderr,	"                         (for the update command only)\n");
+	fprintf(stderr,	"    -a/--clean-all       clean both\n");
+	fprintf(stderr,	"    -e/--expanded        use 'expanded' update mode:\n");
+	fprintf(stderr,	"                         upgrade for yum and dist-upgrade for apt-get\n");
+	fprintf(stderr,	"    -I/--interactive     use interactive mode of debian package management\n");
+	fprintf(stderr,	"    -s/--force-shared    force action for template area on shared partition case\n");
+	fprintf(stderr,	"    -P/--separate        execute transaction for each template separately\n");
+	fprintf(stderr,	"    -v/--no-vzup2date    Don't call vzup2date to "\
 				"download absent templates/environments.\n");
-	fprintf(stderr,"       --update-cache    update packages in "\
+	fprintf(stderr,	"    --update-cache       update packages in "\
 		"existing cache instead of cache recreation\n");
-	fprintf(stderr,"       --config <config> Use given config for template app-caching\n");
-	fprintf(stderr,"       --ostemplate <ostemplate> Redefine ostemplate in"\
+	fprintf(stderr,	"    --config <config>    Use given config for template app-caching\n");
+	fprintf(stderr,	"    --ostemplate <ostemplate>\n"\
+					"                         Redefine ostemplate in"\
 			" given config for template app-caching.\n");
-	fprintf(stderr,"       --apptemplate <apptemplate<,apptemplate...>> "\
-			"Redefine apptemplate in given config for template "\
-			"app-caching.\n");
-	fprintf(stderr,"    --vefstype <VEFSTYPE> Redefine the VEFSTYPE parameter in the vz global\n" \
-		"configuration file\n");
+	fprintf(stderr,	"    --apptemplate <apptemplate<,apptemplate...>>\n"\
+					"                         Redefine apptemplate in given config for template\n"\
+					"                         app-caching.\n");
+	fprintf(stderr,	"    --vefstype <VEFSTYPE>\n"\
+					"                         Redefine the VEFSTYPE parameter in the vz global\n" \
+					"                         configuration file\n");
+	fprintf(stderr,	"    --veimgfmt <VEIMAGEFORMAT>\n"
+					"                         Redefine the VEIMAGEFORMAT parameter in the vz global\n" \
+					"                         configuration file\n");
 
 /*	fprintf(stderr,"       --skip-db         do not check vzpackages in "\
 		"internal packages database in repair mode\n");*/
@@ -304,6 +310,7 @@ static int parse_cmd_line(
 		{"available", no_argument, NULL, PARAM_AVAILABLE},
 		{"vefstype", required_argument, NULL, PARAM_VEFSTYPE},
 		{"progress", required_argument, NULL, PARAM_PROGRESS_FD},
+		{"veimgfmt", required_argument, NULL, PARAM_VEIMGFMT},
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -482,6 +489,13 @@ static int parse_cmd_line(
 				return VZT_BAD_PARAM;
 			}
 			opts_vztt->vefstype = strdup(optarg);
+			break;
+		case PARAM_VEIMGFMT:
+			if (optarg == NULL || strlen(optarg) == 0) {
+				vztt_logger(0, 0, "Parameter 'veimgfmt' is empty");
+				return VZT_BAD_PARAM;
+			}
+			opts_vztt->image_format = strdup(optarg);
 			break;
 		case PARAM_PROGRESS_FD:
 			if (optarg == NULL || strlen(optarg) == 0 || atoi(optarg) == 0) {

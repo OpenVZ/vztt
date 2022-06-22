@@ -1764,15 +1764,24 @@ int tmpl_get_clean_os_name(char *path)
 	return 0;
 }
 
-
 int tmpl_get_cache_tar_name(char *path, int size,
 				unsigned long archive, unsigned long cache_type,
-					const char *tmpldir, const char *osname)
+				const char *fstype,
+				const char *tmpldir, const char *osname)
 {
-	char *storage_suffix = "";
-	char *fstype_suffix = "";
-	char *archive_suffix = "";
 	int n;
+	char *storage_suffix = "";
+	char *simfs_preffix = "";
+	char *archive_suffix = "";
+	char *fstype_suffix;
+	char out[4096];
+
+	if (fstype && fstype[0] != '\0')
+		fstype_suffix = fstype;
+	else {
+		vzctl2_get_def_fstype(out, sizeof(out));
+		fstype_suffix = out;
+	}
 
 	if (cache_type & VZT_CACHE_TYPE_QCOW2)
 		storage_suffix = QCOW2_SUFFIX;
@@ -1782,7 +1791,7 @@ int tmpl_get_cache_tar_name(char *path, int size,
 		storage_suffix = PLOOP_SUFFIX;
 
 	if (cache_type & VZT_CACHE_TYPE_SIMFS)
-		fstype_suffix = SIMFS_SUFFIX;
+		simfs_preffix = SIMFS_SUFFIX;
 
 	switch (archive) {
 	case VZT_ARCHIVE_LZ4:
@@ -1797,14 +1806,14 @@ int tmpl_get_cache_tar_name(char *path, int size,
 		break;
 	}
 
-	n = snprintf((path), (size), "%s/cache/%s%s%s%s",
-		(tmpldir), (osname), fstype_suffix, storage_suffix, archive_suffix);
+	n = snprintf((path), (size), "%s/cache/%s%s.%s%s%s",
+		(tmpldir), (osname), simfs_preffix, fstype_suffix, storage_suffix, archive_suffix);
 
 	return (n > 0 && n < size) ? 0 : -1;
 }
 
 
-int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
+int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type, const char *fstype,
 						const char *tmpldir, const char *osname)
 {
 	const int ARCHIVES[] = {VZT_ARCHIVE_LZ4, VZT_ARCHIVE_LZRW, VZT_ARCHIVE_GZ};
@@ -1813,13 +1822,13 @@ int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
 	struct stat st;
 
 	for (i = 0; i < ARCHIVES_COUNT; ++i) {
-		if (tmpl_get_cache_tar_name(path, size, ARCHIVES[i], cache_type, tmpldir, osname) == -1)
+		if (tmpl_get_cache_tar_name(path, size, ARCHIVES[i], cache_type, fstype, tmpldir, osname) == -1)
 			return -2;
 		if (stat(path, &st) == 0) {
 			/* Should check for prlcompress here */
 			if (ARCHIVES[i] == VZT_ARCHIVE_LZRW && stat(PRL_COMPRESS_FP, &st) != 0) {
 				vztt_logger(1, 0, PRL_COMPRESS " utility is not found, " \
-				    "running " YUM " to install it...");
+					"running " YUM " to install it...");
 				if (yum_install_execv_cmd_op(PRL_COMPRESS, 1, 1)) {
 					vztt_logger(0, 0, "Failed to install the " PRL_COMPRESS);
 					return -1;
@@ -1832,21 +1841,6 @@ int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
 	return -1;
 }
 
-int old_ploop_cache_exists(unsigned long archive, const char *tmpldir,
-					const char *osname)
-{
-	char path[PATH_MAX+1];
-
-	tmpl_get_cache_tar_name(path, sizeof(path), archive,
-		VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP,
-		tmpldir, osname);
-
-	if (access(path, F_OK) == 0)
-		return 1;
-
-	return 0;
-}
-
 int tmpl_get_cache_tar(
 	struct global_config *gc,
 	char *path,
@@ -1855,7 +1849,9 @@ int tmpl_get_cache_tar(
 	const char *osname)
 {
 	unsigned long cache_types[5];
+	const char* FSTYPE[] = {"ext4", "xfs", 0};
 	int i = 0;
+	int j = 0;
 
 	/* Case for vefstype "all" */
 	if (gc == 0 || gc->veformat == 0)
@@ -1869,9 +1865,14 @@ int tmpl_get_cache_tar(
 	}
 	else
 	{
-		cache_types[0] = get_cache_type(gc);
+		cache_types[0] = get_cache_type(gc, "");
 		/* Add old-format ploop here */
 		if (cache_types[0] & VZT_CACHE_TYPE_PLOOP_V2)
+		{
+			cache_types[1] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP;
+			cache_types[2] = 0;
+		}
+		else if (cache_types[0] & VZT_CACHE_TYPE_QCOW2)
 		{
 			cache_types[1] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP;
 			cache_types[2] = 0;
@@ -1882,11 +1883,16 @@ int tmpl_get_cache_tar(
 		}
 	}
 
-	while(cache_types[i] != 0)
+	while (FSTYPE[j] != 0)
 	{
-		if (tmpl_get_cache_tar_by_type(path, size, cache_types[i], tmpldir, osname) == 0)
-			return 0;
-		i ++;
+		while (cache_types[i] != 0)
+		{
+			if (tmpl_get_cache_tar_by_type(path, size, cache_types[i], FSTYPE[j], tmpldir, osname) == 0)
+				return 0;
+			i ++;
+		}
+		j++;
+		i = 0;
 	}
 
 	return -1;
@@ -1902,6 +1908,10 @@ int tmpl_callback_cache_tar(
 {
 	char path[PATH_MAX+1];
 	unsigned long cache_types[5];
+	int i = -1;
+	int j = 0;
+	int rc = 0;
+	const char* FSTYPE[] = {"ext4", "xfs", 0};
 
 	/* vefstype "all" case */
 	if (gc == 0 || gc->veformat == 0)
@@ -1915,7 +1925,7 @@ int tmpl_callback_cache_tar(
 	}
 	else
 	{
-		cache_types[0] = get_cache_type(gc);
+		cache_types[0] = get_cache_type(gc, "");
 		/* Add old-format ploop here */
 		if (cache_types[0] & VZT_CACHE_TYPE_PLOOP_V2)
 		{
@@ -1928,21 +1938,26 @@ int tmpl_callback_cache_tar(
 		}
 	}
 
-	int i = -1;
-	int rc = 0;
-	while(cache_types[++i] != 0)
+	while (FSTYPE[j] != 0)
 	{
-		/*call 2 times for both archiver*/
-		if (tmpl_get_cache_tar_by_type(path, sizeof(path), cache_types[i], tmpldir, osname))
-			continue;
-		rc = call_fn(path, data);
-		if (rc)
-			break;
-		if (tmpl_get_cache_tar_by_type(path, sizeof(path), cache_types[i], tmpldir, osname))
-			continue;
-		rc = call_fn(path, data);
-		if (rc)
-			break;
+		while(cache_types[++i] != 0)
+		{
+
+			/*call 2 times for both archiver*/
+			if (tmpl_get_cache_tar_by_type(path, sizeof(path), cache_types[i], FSTYPE[j], tmpldir, osname))
+				continue;
+			rc = call_fn(path, data);
+			if (rc)
+				break;
+			if (tmpl_get_cache_tar_by_type(path, sizeof(path), cache_types[i], FSTYPE[j], tmpldir, osname))
+				continue;
+
+			rc = call_fn(path, data);
+			if (rc)
+				break;
+		}
+		j++;
+		i = 0;
 	}
 
 	return rc;

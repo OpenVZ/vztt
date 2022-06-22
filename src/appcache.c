@@ -479,7 +479,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	/* file name for appcache */
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
-				get_cache_type(&gc), gc.template_dir, os_app_name);
+				get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype, gc.template_dir, os_app_name);
 	if ((cachename = strdup(path)) == NULL) {
 		vztt_logger(0, errno, "Cannot alloc memory");
 		rc = VZT_CANT_ALLOC_MEM;
@@ -500,10 +500,11 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 	}
 
 	/* Skip create just convert image if old cache exist */
-	if (get_cache_type(&gc) & VZT_CACHE_TYPE_PLOOP_V2) {
+	if (get_cache_type(&gc, opts_vztt->image_format) & VZT_CACHE_TYPE_PLOOP_V2) {
 		char old[PATH_MAX+1];
 		tmpl_get_cache_tar_name(old, sizeof(path), tc.archive,
 				VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP,
+				opts_vztt->vefstype,
 				gc.template_dir, os_app_name);
 
 		if (access(old, F_OK) == 0) {
@@ -514,7 +515,8 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	/* if base OS cache file does not exist - run create_cache */
 	tmpl_get_cache_tar_name(base_cachename, sizeof(base_cachename),
-		tc.archive, get_cache_type(&gc), gc.template_dir,
+		tc.archive, get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype,
+		gc.template_dir,
 		tmpl->os->name);
 	if (access(base_cachename, F_OK) != 0) {
 
@@ -625,7 +627,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype, &ploop_dir)))
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->image_format, &ploop_dir)))
 			goto cleanup_4;
 
 		/*disable quota*/
@@ -951,7 +953,8 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 	}
 
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
-				get_cache_type(&gc), gc.template_dir, os_app_name);
+				get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype,
+				gc.template_dir, os_app_name);
 
 	/* Check for current cache */
 	if (access(path, F_OK))
@@ -1079,7 +1082,7 @@ int vztt2_update_appcache(struct options_vztt *opts_vztt)
 
 	if (gc.velayout == VZT_VE_LAYOUT5)
 	{
-		if ((rc = create_ploop_dir(ve_private, opts_vztt->vefstype, &ploop_dir)))
+		if ((rc = create_ploop_dir(ve_private, opts_vztt->image_format,  &ploop_dir)))
 			goto cleanup_4;
 
 		/*disable quota*/
@@ -1572,7 +1575,7 @@ int info_appcache(struct options_vztt *opts_vztt)
 	/* Try to find the cache with all archive types,
 		but with special case for ploop v2: will
 		ignore old ploop cache */
-	if (gc.veformat && tmpl_get_cache_tar_by_type(path, sizeof(path), get_cache_type(&gc),
+	if (gc.veformat && tmpl_get_cache_tar_by_type(path, sizeof(path), get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype,
 				gc.template_dir, os_app_name) != 0) {
 		rc = VZT_TMPL_NOT_CACHED;
 	} else if (tmpl_get_cache_tar(&gc, path, sizeof(path), gc.template_dir,

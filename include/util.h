@@ -245,11 +245,13 @@ generate path to os template cache file.
 */
 int tmpl_get_cache_tar_name(char *path, int size,
 				unsigned long archive, unsigned long cache_type,
-					const char *tmpldir, const char *osname);
+				const char *fstype,
+				const char *tmpldir, const char *osname);
 
 
 
-int tmpl_get_cache_tar_by_type(char *path, int size, unsigned long cache_type,
+int tmpl_get_cache_tar_by_type(char *path, int size,
+				unsigned long cache_type, const char *fstype,
 				const char *tmpldir, const char *osname);
 
 /*
@@ -312,9 +314,6 @@ int fill_vzctl_env_var(
 	char **vzctl_env);
 
 void progress(char *stage, int percent, int progress_fd);
-
-int old_ploop_cache_exists(unsigned long archive, const char *tmpldir,
-					const char *osname);
 
 int compare_osrelease(char *osrelease1, char *osrelease2);
 

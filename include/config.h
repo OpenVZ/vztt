@@ -93,7 +93,7 @@ int global_config_read(
 		struct global_config *gc,
 		struct options_vztt *opts_vztt);
 void global_config_clean(struct global_config *gc);
-unsigned long get_cache_type(struct global_config *gc);
+unsigned long get_cache_type(struct global_config *gc, const char* img_fmt);
 
 /* /etc/vztt/vztt.conf & /etc/vztt/url.map */
 void vztt_config_init(struct vztt_config *tc);

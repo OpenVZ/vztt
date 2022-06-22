@@ -229,12 +229,35 @@ int create_ploop(char *ploop_dir, unsigned long long diskspace_kb,
 		struct options_vztt *opts_vztt)
 {
 	int rc = 0;
-	char path[PATH_MAX+1];
+	char *p_fstype = NULL;
+	char *p_imgfmt = NULL;
+	char conf_fstype[PATH_MAX];
+	char conf_img[PATH_MAX];
+	char path[PATH_MAX];
 	struct ploop_create_param param = {
-		.fstype = "",
-		.image_fmt = opts_vztt->vefstype && !strcmp(opts_vztt->vefstype, "qcow2") ?
-				QCOW_FMT : PLOOP_FMT,
+		.fstype = "xfs",
+		.image_fmt = PLOOP_FMT,
 	};
+
+	//if fstype is set by CL then use it, if it is not - use from vz.conf file [VEFSTYPE], else use default value
+	if (opts_vztt->vefstype && opts_vztt->vefstype[0] != '\0')
+		p_fstype = opts_vztt->vefstype;
+	else {
+		vzctl2_get_def_fstype(conf_fstype, sizeof(conf_fstype));
+		p_fstype = conf_fstype;
+	}
+	if (!strcmp(p_fstype, "ext4"))
+		param.fstype = "ext4";
+
+	//if 'image format' is set by CL then use it, if it is not - use from vz.conf file [VEIMGFMT], else use default value
+	if (opts_vztt->image_format && opts_vztt->image_format[0] != '\0')
+		p_imgfmt = opts_vztt->image_format;
+	else {
+		vzctl2_get_def_img_fmt(conf_img, sizeof(conf_img));
+		p_imgfmt = conf_img;
+	}
+	if (!strcmp(p_imgfmt, QCOW2_FORMAT))
+		param.image_fmt = QCOW_FMT;
 
 	progress(PROGRESS_CREATE_PLOOP, 0, opts_vztt->progress_fd);
 	snprintf(path, sizeof(path), "%s/%s", ploop_dir,
@@ -389,14 +412,26 @@ cleanup_0:
 	return rc;
 }
 
-int create_ploop_dir(char *ve_private, const char *fstype, char **ploop_dir) {
+int create_ploop_dir(char *ve_private, const char *img_format, char **ploop_dir)
+{
+	const char *cur_image_format = NULL;
+	char buf[4096];
+
 	// root.hdd hardcoded in vzctl
 	if (((*ploop_dir) = malloc(strlen(ve_private) + 10)) == NULL) {
 		vztt_logger(0, errno, "Cannot alloc memory");
 		return VZT_CANT_ALLOC_MEM;
 	}
 
-	if (fstype && !strcmp(fstype, "qcow2")) {
+	if (!img_format || img_format[0] == '\0')
+	{
+		vzctl2_get_def_img_fmt(buf, sizeof(buf));
+		cur_image_format = buf;
+	}
+	else
+		cur_image_format = img_format;
+
+	if (!strcmp(cur_image_format, QCOW2_FORMAT)) {
 		sprintf((*ploop_dir), "%s", ve_private);
 		return 0;
 	}

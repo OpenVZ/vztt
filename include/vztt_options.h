@@ -45,6 +45,7 @@ struct options_vztt {
 	char *app_ostemplate;
 	char *app_apptemplate;
 	char *vefstype;
+	char *image_format;
 	int progress_fd;
 };
 

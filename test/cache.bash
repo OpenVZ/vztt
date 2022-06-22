@@ -9,7 +9,7 @@ function cache_test()
 	local ostemplate=$1
 
 	# remove cache
-	if [ -f /vz/template/cache/${ostemplate}.tar.gz ] ; then
+	if compgen -G "/vz/template/cache/${ostemplate}*.lz4" > /dev/null; then
 		$VZPKG remove cache -d $DLEVEL $ostemplate 2>&1 | tee -a $LOGFILE
 		if [ ${PIPESTATUS[0]} -ne 0 ] ; then
 			echo "remove cache $ostemplate error"
@@ -30,16 +30,10 @@ function cache_test()
 	fi
 }
 
-cache_test redhat-as4-x86
+cache_test almalinux-8-x86_64
 
-cache_test fedora-core-5-x86_64
+cache_test ubuntu-18.04-x86_64
 
-cache_test suse-10.2-x86_64
-
-cache_test debian-3.1-x86-addons
-
-cache_test ubuntu-6.10-x86_64
-
-cache_test ubuntu-6.06-x86
+cache_test centos-7-x86_64
 
 echo -e "\nCache test success.\n"

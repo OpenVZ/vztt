@@ -416,15 +416,15 @@ static int global_config_reader(char *var, char *val, void *data)
 			return 0;
 
 		if ((gc->veformat = vzctl2_name2tech(val)) == 0) {
-			vztt_logger(0, 0, "Unknown %s: %s", var, val);
+			vztt_logger(0, 0, "Unknown parameter '%s': '%s'", var, val);
 			return VZT_UNKNOWN_VEFORMAT;
 		}
 
 		if (gc->veformat != VZ_T_VZFS0 &&
 				gc->veformat != VZ_T_EXT4 &&
-				gc->veformat != VZ_T_QCOW2) {
-			vztt_logger(0, 0, "Unknown %s: %s", var, val);
-			return VZT_UNKNOWN_VEFORMAT;
+				gc->veformat != VZ_T_XFS) {
+			vztt_logger(0, 0, "Unsupported parameter '%s': '%s'", var, val);
+			return VZT_UNSUPPORTED_VEFORMAT;
 		}
 	} else if ((strcmp("GOLDEN_IMAGE", var) == 0)) {
 		if (is_disabled(val))
@@ -434,12 +434,25 @@ static int global_config_reader(char *var, char *val, void *data)
 	return pfcache_config_reader(var, val, data);
 }
 
-unsigned long get_cache_type(struct global_config *gc)
+unsigned long get_cache_type(struct global_config *gc, const char* img_fmt)
 {
 	unsigned long type = 0;
+	char buf[4096];
+	char *pImgFmt = NULL;
 
-	if (gc->veformat == VZ_T_QCOW2)
+	if (img_fmt && img_fmt[0] != '\0')
+		pImgFmt = (char*) img_fmt;
+	else {
+		vzctl2_get_def_img_fmt(buf, sizeof(buf));
+		pImgFmt = buf;
+	}
+
+	if (!strcmp(pImgFmt, QCOW2_FORMAT))
 		return VZT_CACHE_TYPE_QCOW2;
+	if (!strcmp(pImgFmt, PLOOP_FORMAT) || !strcmp(pImgFmt, PLOOP_V2_FORMAT))
+		return VZT_CACHE_TYPE_PLOOP_V2 | VZT_CACHE_TYPE_SIMFS;
+	if (!strcmp(pImgFmt, SIMFS_FORMAT))
+		return VZT_CACHE_TYPE_SIMFS;
 
 	if (gc->veformat == VZ_T_VZFS0)
 		type |= VZT_CACHE_TYPE_SIMFS;
@@ -497,7 +510,7 @@ static int process_fstype_layout(struct global_config *gc, struct options_vztt *
 		if( !(opts_vztt && (opts_vztt->flags & OPT_VZTT_QUIET)) )
 			vztt_logger(VZTL_INFO, 0,	\
 			"The VEFSTYPE parameter is not set in the vz global " \
-			"configuration file; use the default \"ext4\" value.");
+			"configuration file; use the default \"xfs\" value.");
 		gc->veformat = VZ_T_VZFS0;
 		gc->velayout = VZT_VE_LAYOUT5;
 		return 0;
@@ -514,7 +527,7 @@ static int process_fstype_layout(struct global_config *gc, struct options_vztt *
 		gc->veformat = VZ_T_VZFS0;
 		gc->velayout = VZT_VE_LAYOUT5;
 	}
-	else if (gc->veformat == VZ_T_QCOW2)
+	else if (gc->veformat & VZ_T_XFS)
 		gc->velayout = VZT_VE_LAYOUT5;
 	else
 	{
