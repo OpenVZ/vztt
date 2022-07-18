@@ -339,7 +339,7 @@ static int create_cache(
 		struct ve_config vc;
 
 		if (!opts_vztt->vefstype)
-			opts_vztt->vefstype = (gc.veformat & VZ_T_EXT4) ? strdup("ext4") : strdup("xfs");
+			opts_vztt->vefstype = (gc.veformat & (VZ_T_EXT4 | VZ_T_VZFS0)) ? strdup("ext4") : strdup("xfs");
 
 		if ((rc = create_ploop_dir(ve_private, opts_vztt->image_format,  &ploop_dir)))
 			goto cleanup_3;

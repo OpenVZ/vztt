@@ -511,7 +511,7 @@ static int process_fstype_layout(struct global_config *gc, struct options_vztt *
 			vztt_logger(VZTL_INFO, 0,	\
 			"The VEFSTYPE parameter is not set in the vz global " \
 			"configuration file; use the default \"xfs\" value.");
-		gc->veformat = VZ_T_VZFS0;
+		gc->veformat = VZ_T_XFS;
 		gc->velayout = VZT_VE_LAYOUT5;
 		return 0;
 	}
