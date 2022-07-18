@@ -1,5 +1,5 @@
 .\" $Id$
-.TH vzpkg 8 "March 2010" "@PRODUCT_NAME_SHORT@"
+.TH vzpkg 8 "July 2022" "@PRODUCT_NAME_SHORT@"
 .SH NAME
 \fBvzpkg\fR \- tool for managing @PRODUCT_NAME_SHORT@ templates.
 .SH SYNOPSYS
@@ -269,6 +269,7 @@ Update packages in the existing OS template cache instead of recreating the cach
 .TP
 \fB\-\-vefstype <VEFSTYPE>\fR
 Redefine the VEFSTYPE parameter in the vz global configuration file.
+.TP
 \fB\-\-veimgfmt <VEIMAGEFORMAT>\fR
 Redefine the VEIMAGEFORMAT parameter in the vz global configuration file.
 .SH DIAGNOSTICS
@@ -510,5 +511,7 @@ To remove the OS template fedora-core-12-x86 from the Node:
 .BR vzup2date.conf (5),
 .BR vzmktmpl (8).
 .SH COPYRIGHT
+.br
 Copyright (c) 2001-2017, Parallels International GmbH. All rights reserved.
-Copyright (c) 2017-2019 Virtuozzo International GmbH. All rights reserved.
+.br
+Copyright (c) 2017-2022, Virtuozzo International GmbH. All rights reserved.
