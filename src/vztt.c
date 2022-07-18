@@ -485,7 +485,7 @@ static int parse_cmd_line(
 			break;
 		case PARAM_VEFSTYPE:
 			if (optarg == NULL || strlen(optarg) == 0) {
-				vztt_logger(0, 0, "Bad VEFSTYPE name");
+				vztt_logger(0, 0, "parameter 'vefstype' is empty");
 				return VZT_BAD_PARAM;
 			}
 			opts_vztt->vefstype = strdup(optarg);
