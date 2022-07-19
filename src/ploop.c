@@ -258,6 +258,8 @@ int create_ploop(char *ploop_dir, unsigned long long diskspace_kb,
 	}
 	if (!strcmp(p_imgfmt, QCOW2_FORMAT))
 		param.image_fmt = QCOW_FMT;
+	else if (strcmp(p_imgfmt, SIMFS_FORMAT) && strcmp(p_imgfmt, PLOOP_FORMAT) && strcmp(p_imgfmt, PLOOP_V2_FORMAT))
+		vztt_logger(-1, 0, "Warning: Unknown veimgfmt '%s'. Used default 'ploopv2' format instead.", p_imgfmt);
 
 	progress(PROGRESS_CREATE_PLOOP, 0, opts_vztt->progress_fd);
 	snprintf(path, sizeof(path), "%s/%s", ploop_dir,
