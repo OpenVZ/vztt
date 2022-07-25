@@ -51,6 +51,7 @@
 
 #include <vzctl/libvzctl.h>
 
+#include "cache.h"
 #include "vzcommon.h"
 #include "config.h"
 #include "vztt_error.h"
@@ -1898,7 +1899,6 @@ int tmpl_get_cache_tar(
 	return -1;
 }
 
-
 int tmpl_callback_cache_tar(
 	struct global_config *gc,
 	const char *tmpldir,
@@ -1911,21 +1911,25 @@ int tmpl_callback_cache_tar(
 	int i = -1;
 	int j = 0;
 	int rc = 0;
-	const char* FSTYPE[] = {"ext4", "xfs", 0};
+	const char* FSTYPE[3];
+	struct callback_data *cdata = (struct callback_data *)data;
 
-	/* vefstype "all" case */
-	if (gc == 0 || gc->veformat == 0)
+	if (cdata && cdata->opts_vztt->vefstype && cdata->opts_vztt->vefstype[0] != '\0')
 	{
-		/* Supported combinations: simfs + vz4, vz4 + vz4, ploop + ext4 */
-		cache_types[0] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP_V2;
-		cache_types[1] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP;
-		cache_types[2] = VZT_CACHE_TYPE_SIMFS;
-		cache_types[3] = VZT_CACHE_TYPE_QCOW2;
-		cache_types[4] = 0;
+		FSTYPE[0] = cdata->opts_vztt->vefstype;
+		FSTYPE[1] = 0;
 	}
-	else
+	else /*all fs types*/
 	{
-		cache_types[0] = get_cache_type(gc, "");
+		FSTYPE[0] = "ext4";
+		FSTYPE[1] = "xfs";
+		FSTYPE[2] = 0;
+	}
+
+	if (cdata && cdata->opts_vztt->image_format && cdata->opts_vztt->image_format[0] != '\0')
+	{
+		//remove only this image format
+		cache_types[0] = get_cache_type(gc, cdata->opts_vztt->image_format);
 		/* Add old-format ploop here */
 		if (cache_types[0] & VZT_CACHE_TYPE_PLOOP_V2)
 		{
@@ -1936,13 +1940,20 @@ int tmpl_callback_cache_tar(
 		{
 			cache_types[1] = 0;
 		}
+	} else /* "all" case */
+	{
+		/* Supported combinations: simfs + vz4, vz4 + vz4, ploop + ext4 */
+		cache_types[0] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP_V2;
+		cache_types[1] = VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP;
+		cache_types[2] = VZT_CACHE_TYPE_SIMFS;
+		cache_types[3] = VZT_CACHE_TYPE_QCOW2;
+		cache_types[4] = 0;
 	}
 
 	while (FSTYPE[j] != 0)
 	{
 		while(cache_types[++i] != 0)
 		{
-
 			/*call 2 times for both archiver*/
 			if (tmpl_get_cache_tar_by_type(path, sizeof(path), cache_types[i], FSTYPE[j], tmpldir, osname))
 				continue;
@@ -1957,7 +1968,7 @@ int tmpl_callback_cache_tar(
 				break;
 		}
 		j++;
-		i = 0;
+		i = -1;
 	}
 
 	return rc;
