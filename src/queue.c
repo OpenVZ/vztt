@@ -539,20 +539,14 @@ struct package_list_el *package_list_remove(
 {
 	/* get previous element */
 	struct package_list_el *prev = *el->e.tqe_prev;
+	struct package_list_el *next = el->e.tqe_next;
 
 	/* remove content */
 	erase_structp(el->p);
-	if (el->e.tqe_next == NULL ) {
-		TAILQ_REMOVE(ls, el, e);
-		/* Somehow this free() breaks our queue */
-		free((void *)el);
-		prev->e.tqe_next = NULL;
-	}
-	else {
-		TAILQ_REMOVE(ls, el, e);
-		free((void *)el);
-	}
-  
+	TAILQ_REMOVE(ls, el, e);
+	/* Somehow this free() breaks our queue we should restore after next element*/
+	free((void *)el);
+	prev->e.tqe_next = next;
 	return prev;
 }
 
