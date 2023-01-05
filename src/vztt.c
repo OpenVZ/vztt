@@ -129,6 +129,7 @@ enum {
 	PARAM_VEFSTYPE = 4,
 	PARAM_PROGRESS_FD = 5,
 	PARAM_VEIMGFMT = 6,
+	PARAM_TIMEOUT = 7,
 };
 
 /* global - use in vztt_logger */
@@ -248,6 +249,9 @@ void usage(const char * progname, int rc)
 	fprintf(stderr,	"    --veimgfmt <VEIMAGEFORMAT>\n"
 					"                         Redefine the VEIMAGEFORMAT parameter in the vz global\n" \
 					"                         configuration file\n");
+	fprintf(stderr,	"    --timeout <seconds>\n"
+					"                         Define the timeout interval for locked cache until it will be unlocked\n" \
+					"                         Absent or zero value mean infinite period\n");
 
 /*	fprintf(stderr,"       --skip-db         do not check vzpackages in "\
 		"internal packages database in repair mode\n");*/
@@ -311,6 +315,7 @@ static int parse_cmd_line(
 		{"vefstype", required_argument, NULL, PARAM_VEFSTYPE},
 		{"progress", required_argument, NULL, PARAM_PROGRESS_FD},
 		{"veimgfmt", required_argument, NULL, PARAM_VEIMGFMT},
+		{"timeout", required_argument, NULL, PARAM_TIMEOUT},
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -504,7 +509,14 @@ static int parse_cmd_line(
 			}
 			opts_vztt->progress_fd = atoi(optarg);
 			break;
-   		default :
+		case PARAM_TIMEOUT:
+			if (optarg == NULL || strlen(optarg) == 0) {
+				vztt_logger(0, 0, "Parameter 'timeout' is empty");
+				return VZT_BAD_PARAM;
+			}
+			opts_vztt->timeout = strtol(optarg, NULL, 10);
+			break;
+		default :
 			return VZT_BAD_PARAM;
 		}
 	}
@@ -1565,7 +1577,7 @@ int main(int argc, char **argv)
 			}
 		} else {
 			for (i = ind; argv[i] && (rc == 0); i++)
-				rc = vztt2_create_cache(argv[i], opts_vztt, OPT_CACHE_FAIL_EXISTED);
+				rc = vztt2_create_cache(argv[i], opts_vztt, OPT_CACHE_SKIP_EXISTED);
 		}
 		break;
 	case VZTT_CMD_UPDATE_CACHE:
@@ -1767,6 +1779,7 @@ int main(int argc, char **argv)
 		break;
 	case VZTT_CMD_CREATE_PLOOP_IMAGE: {
 		struct vzctl_create_image_param p = {}; 
+		p.timeout = opts_vztt->timeout;
 
 		if (argv[ind] == NULL || argv[ind + 1] == NULL)
 			usage(argv[0], VZT_BAD_PARAM);

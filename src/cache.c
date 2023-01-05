@@ -189,7 +189,7 @@ static int create_cache(
 	}
 
 	if ((rc = cache_lock(&gc, cachename, LOCK_WRITE, opts_vztt->flags,
-			&cache_lockdata)))
+			&cache_lockdata, opts_vztt->timeout)))
 		goto cleanup_0;
 
 	if ((access(cachename, F_OK) == 0) &&

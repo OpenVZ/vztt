@@ -136,7 +136,7 @@ static int file_lock(
 		alarm(timeout);
 	}
 
-	rc = fcntl(fd, timeout ? F_SETLKW : F_SETLK, &fl);
+	rc = fcntl(fd, F_SETLKW, &fl);
 
 	if (timeout) {
 		alarm(0);
@@ -219,7 +219,8 @@ int cache_lock(
 		const char *cache_path,
 		int mode,
 		int vztt,
-		void **lockdata)
+		void **lockdata,
+		unsigned int timeout)
 {
 	int rc;
 	char lock[PATH_MAX + 1];
@@ -235,7 +236,7 @@ int cache_lock(
 
 	if (lock_mech == LOCK_MECH_LCK) {
 		snprintf(lock, sizeof(lock) - 1, "%s.lock", cache_path);
-		rc = file_lock(lock, mode, lockdata, 0);
+		rc = file_lock(lock, mode, lockdata, timeout);
 	} else {
 		return vztt_error(VZT_INTERNAL, 0, "Undefined lock type in cache_lock()");
 	}

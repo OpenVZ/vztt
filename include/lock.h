@@ -54,7 +54,8 @@ int cache_lock(
 		const char *cache_path,
 		int mode,
 		int vztt,
-		void **lockdata);
+		void **lockdata,
+		unsigned int timeout);
 
 /* unlock template cache */
 int cache_unlock(void *lockdata, int vztt);

@@ -1,5 +1,5 @@
 .\" $Id$
-.TH vzpkg 8 "July 2022" "@PRODUCT_NAME_SHORT@"
+.TH vzpkg 5 "January 2023" "@PRODUCT_NAME_SHORT@"
 .SH NAME
 \fBvzpkg\fR \- tool for managing @PRODUCT_NAME_SHORT@ templates.
 .SH SYNOPSYS
@@ -267,6 +267,11 @@ Execute the transaction separately for each template.
 \fB\-\-update-cache\fR
 Update packages in the existing OS template cache instead of recreating the cache.
 .TP
+\fB\-\-timeout\fR
+Define the timeout interval for locked cache until it will be unlocked.
+Absent or zero value mean infinite period.
+It is used only when creating cache or image from template and cache is absent.
+.TP
 \fB\-\-vefstype <VEFSTYPE>\fR
 Redefine the VEFSTYPE parameter in the vz global configuration file.
 .TP
@@ -514,4 +519,4 @@ To remove the OS template fedora-core-12-x86 from the Node:
 .br
 Copyright (c) 2001-2017, Parallels International GmbH. All rights reserved.
 .br
-Copyright (c) 2017-2022, Virtuozzo International GmbH. All rights reserved.
+Copyright (c) 2017-2023, Virtuozzo International GmbH. All rights reserved.
