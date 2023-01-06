@@ -58,11 +58,6 @@
 #define CACHE_INIT_BIN "vztt/myinit"
 #define PFCACHE_BIN "/usr/libexec/vztt_pfcache_xattr"
 
-/* cache creation mode */
-#define  OPT_CACHE_FAIL_EXISTED  0
-#define  OPT_CACHE_SKIP_EXISTED  1
-#define  OPT_CACHE_RECREATE      2
-
 /* create os template cache */
 static int create_cache(
 	char *ostemplate,

@@ -1560,12 +1560,12 @@ int main(int argc, char **argv)
 				goto cleanup;
 			for (i = 0; base_os[i]; i++) {
 				if ((rc = vztt2_create_cache(base_os[i],
-						opts_vztt, 1)))
+						opts_vztt, OPT_CACHE_SKIP_EXISTED)))
 					goto cleanup;
 			}
 		} else {
 			for (i = ind; argv[i] && (rc == 0); i++)
-				rc = vztt2_create_cache(argv[i], opts_vztt, 0);
+				rc = vztt2_create_cache(argv[i], opts_vztt, OPT_CACHE_FAIL_EXISTED);
 		}
 		break;
 	case VZTT_CMD_UPDATE_CACHE:

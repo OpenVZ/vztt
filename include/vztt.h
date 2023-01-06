@@ -42,6 +42,11 @@ extern "C" {
 #define PROGRESS_DELIMITER " "
 #define PROGRESS_END "\n"
 
+/* cache creation mode */
+#define  OPT_CACHE_FAIL_EXISTED  0
+#define  OPT_CACHE_SKIP_EXISTED  1
+#define  OPT_CACHE_RECREATE      2
+
 /*
  get list of `custom` packages:
  packages, installed in VE but not available in repositoies

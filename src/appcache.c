@@ -521,7 +521,7 @@ int vztt2_create_appcache(struct options_vztt *opts_vztt, int recreate)
 	if (access(base_cachename, F_OK) != 0) {
 
 		/* Recreate cache here for the case of old-format ploop cache */
-		if ((rc = vztt2_create_cache(tmpl->os->name, opts_vztt, 0)))
+		if ((rc = vztt2_create_cache(tmpl->os->name, opts_vztt, OPT_CACHE_FAIL_EXISTED)))
 			goto cleanup_2;
 
 		if (access(base_cachename, F_OK) != 0)
