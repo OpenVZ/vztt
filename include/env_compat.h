@@ -40,8 +40,10 @@ extern "C" {
 #define RELEASE_TITLE "Release:"
 #define SUMMARY_TITLE "Summary:"
 #define DESC_TITLE "Description:"
-#define NAME_TITLE_RPM "Name   :"
+#define NAME_TITLE_RPM		"Name   :"
+#define NAME_TITLE_RPM_LONG "Name     \t   :"
 #define ARCH_TITLE_RPM "Arch   :"
+
 
 int read_rpm_info(FILE *fp, void *data);
 

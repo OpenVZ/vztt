@@ -50,15 +50,22 @@ int read_rpm_info(FILE *fp, void *data)
 	char buf[PATH_MAX+1];
 	char *str;
 	int is_descr = 0;
+	int short_name = 0;
+	int long_name  = 0;
+
 	struct pkg_info *p = NULL;
 	struct string_list description;
 	struct pkg_info_list *ls = (struct pkg_info_list *)data;
 
 	string_list_init(&description);
 	while(fgets(buf, sizeof(buf), fp)) {
-		if (strncmp(buf, NAME_TITLE_RPM, strlen(NAME_TITLE_RPM)) == 0) {
+
+		long_name  = strncmp(buf, NAME_TITLE_RPM_LONG, strlen(NAME_TITLE_RPM_LONG)) == 0;
+		short_name = strncmp(buf, NAME_TITLE_RPM, strlen(NAME_TITLE_RPM)) == 0;
+
+		if (long_name || short_name) {
 			is_descr = 0;
-			str = cut_off_string(buf + strlen(NAME_TITLE_RPM));
+			str = cut_off_string(buf + strlen(long_name ? NAME_TITLE_RPM_LONG : NAME_TITLE_RPM));
 			if (str == NULL)
 				continue;
 			p = (struct pkg_info *)malloc(sizeof(struct pkg_info));
