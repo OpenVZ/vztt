@@ -42,6 +42,29 @@
 #include "vztt_error.h"
 #include "progress_messages.h"
 
+/*
+ Naive lenght calclulation of specific rpms attributes such as
+ Name, Version, Release, Summary, Decription.
+ All of described attrs have colon at the end of their strings.
+ But there are no any agreements about a number of spaces or tabs, or
+ their combinations between atrr title and colon.
+ Thus, we add naive fun to count full lenght of rpm attribute. */
+
+int rpm_substring_len(char* buf, char* target)
+{
+	int res = 0;
+	char *begin = strstr(buf, target);
+
+	if (begin != NULL) {
+		char* point = strstr(buf, ":");
+
+		if (point != NULL)
+			res = (int)(point - begin) + 1;
+	}
+
+	return res;
+}
+
 /* Read rpm package(s) info from <fp>, parse and
    put into struct pkg_info * list <ls> */
 
@@ -50,17 +73,21 @@ int read_rpm_info(FILE *fp, void *data)
 	char buf[PATH_MAX+1];
 	char *str;
 	int is_descr = 0;
+
 	struct pkg_info *p = NULL;
 	struct string_list description;
 	struct pkg_info_list *ls = (struct pkg_info_list *)data;
 
 	string_list_init(&description);
 	while(fgets(buf, sizeof(buf), fp)) {
-		if (strncmp(buf, NAME_TITLE_RPM, strlen(NAME_TITLE_RPM)) == 0) {
+
+		int current_name_len = rpm_substring_len(buf, "Name");
+
+		if (current_name_len > 0) {
 			is_descr = 0;
-			str = cut_off_string(buf + strlen(NAME_TITLE_RPM));
-			if (str == NULL)
-				continue;
+
+			str = cut_off_string(buf + current_name_len);
+
 			p = (struct pkg_info *)malloc(sizeof(struct pkg_info));
 			if (p == NULL) {
 				vztt_logger(0, errno, "Cannot alloc memory");
@@ -79,33 +106,28 @@ int read_rpm_info(FILE *fp, void *data)
 		if (p == NULL)
 			continue;
 
-		if (strncmp(buf, ARCH_TITLE_RPM, \
-				strlen(ARCH_TITLE_RPM)) == 0) {
-			str = cut_off_string(buf + strlen(ARCH_TITLE_RPM));
+		if (rpm_substring_len(buf, "Arch") > 0) {
+			str = cut_off_string(buf + rpm_substring_len(buf, "Arch"));
 			if (str)
 				p->arch = strdup(str);
 		}
-		else if (strncmp(buf, VERSION_TITLE, \
-				strlen(VERSION_TITLE)) == 0) {
-			str = cut_off_string(buf + strlen(VERSION_TITLE));
+		else if (rpm_substring_len(buf, "Version") > 0) {
+			str = cut_off_string(buf + strlen("Version"));
 			if (str)
 				p->version = strdup(str);
 		}
-		else if (strncmp(buf, RELEASE_TITLE, \
-				strlen(RELEASE_TITLE)) == 0) {
-			str = cut_off_string(buf + strlen(RELEASE_TITLE));
+		else if (rpm_substring_len(buf, "Release") > 0) {
+			str = cut_off_string(buf + rpm_substring_len(buf, "Release"));
 			if (str)
 				p->release = strdup(str);
 		}
-		else if (strncmp(buf, SUMMARY_TITLE, \
-				strlen(SUMMARY_TITLE)) == 0) {
-			str = cut_off_string(buf + strlen(SUMMARY_TITLE));
+		else if (rpm_substring_len(buf, "Summary") > 0) {
+			str = cut_off_string(buf + rpm_substring_len(buf, "Summary"));
 			if (str)
 				p->summary = strdup(str);
 		}
-		else if (strncmp(buf, DESC_TITLE, \
-				strlen(DESC_TITLE)) == 0) {
-			str = cut_off_string(buf + strlen(DESC_TITLE));
+		else if (rpm_substring_len(buf, "Description") > 0 ) {
+			str = cut_off_string(buf + rpm_substring_len(buf, "Description"));
 			if (str)
 				string_list_add(&description, str);
 			is_descr = 1;

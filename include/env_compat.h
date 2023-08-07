@@ -43,6 +43,8 @@ extern "C" {
 #define NAME_TITLE_RPM "Name   :"
 #define ARCH_TITLE_RPM "Arch   :"
 
+int rpm_substring_len(char* buf, char* target);
+
 int read_rpm_info(FILE *fp, void *data);
 
 int fetch_mirrorlist(
