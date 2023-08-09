@@ -34,14 +34,25 @@
 extern "C" {
 #endif
 
-#define NAME_TITLE "Name:"
-#define ARCH_TITLE "Arch:"
-#define VERSION_TITLE "Version:"
-#define RELEASE_TITLE "Release:"
-#define SUMMARY_TITLE "Summary:"
-#define DESC_TITLE "Description:"
-#define NAME_TITLE_RPM "Name   :"
-#define ARCH_TITLE_RPM "Arch   :"
+#define NAME_STR     "Name"
+#define ARCH_STR     "Arch"
+#define VERSION_STR  "Version"
+#define RELEASE_STR  "Release"
+#define SUMMARY_STR  "Summary"
+#define DESC_STR     "Description"
+
+#define NAME_TITLE NAME_STR ":"
+#define ARCH_TITLE ARCH_STR ":"
+#define VERSION_TITLE VERSION_STR ":"
+#define RELEASE_TITLE RELEASE_STR ":"
+#define SUMMARY_TITLE SUMMARY_STR ":"
+#define DESC_TITLE DESC_STR ":"
+
+#define NAME_TITLE_RPM NAME_STR "   :"
+#define ARCH_TITLE_RPM ARCH_STR "   :"
+
+
+int colon_offset(char* buf, char* target);
 
 int read_rpm_info(FILE *fp, void *data);
 

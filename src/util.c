@@ -1307,8 +1307,8 @@ char *cut_off_string(char *str)
 	char *sp, *ep;
 
 	sp = str;
-	// skip leading spaces
-	while (*sp && (isspace(*sp) || *sp=='\t')) sp++;
+	// skip leading spaces and possible colon sign
+	while (*sp && (isspace(*sp) || *sp=='\t' || *sp == ':')) sp++;
 	// skip empty or comment strings
 	if (!*sp || *sp == '#')
 		return NULL;
