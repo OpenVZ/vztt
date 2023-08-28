@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015-2017, Parallels International GmbH
- * Copyright (c) 2017-2019 Virtuozzo International GmbH. All rights reserved.
+ * Copyright (c) 2017-2023 Virtuozzo International GmbH. All rights reserved.
  *
  * This file is part of OpenVZ. OpenVZ is free software;
  * you can redistribute it and/or modify it under the terms of the GNU
@@ -93,7 +93,7 @@ int global_config_read(
 		struct global_config *gc,
 		struct options_vztt *opts_vztt);
 void global_config_clean(struct global_config *gc);
-unsigned long get_cache_type(struct global_config *gc, const char* img_fmt);
+unsigned long get_cache_type(struct global_config *gc, const char* img_fmt, const char* fstype);
 
 /* /etc/vztt/vztt.conf & /etc/vztt/url.map */
 void vztt_config_init(struct vztt_config *tc);

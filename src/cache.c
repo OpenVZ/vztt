@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015-2017, Parallels International GmbH
- * Copyright (c) 2017-2019 Virtuozzo International GmbH. All rights reserved.
+ * Copyright (c) 2017-2023 Virtuozzo International GmbH. All rights reserved.
  *
  * This file is part of OpenVZ. OpenVZ is free software;
  * you can redistribute it and/or modify it under the terms of the GNU
@@ -149,7 +149,7 @@ static int create_cache(
 		return rc;
 
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
-				get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype, gc.template_dir, tmpl->os->name);
+				get_cache_type(&gc, opts_vztt->image_format, opts_vztt->vefstype), opts_vztt->vefstype, gc.template_dir, tmpl->os->name);
 	if ((cachename = strdup(path)) == NULL) {
 		vztt_logger(0, errno, "Cannot alloc memory");
 		rc = VZT_CANT_ALLOC_MEM;
@@ -181,7 +181,7 @@ static int create_cache(
 	}
 
 	/* Check for cache_type supported */
-	if ((tmpl->base->cache_type & get_cache_type(&gc, opts_vztt->image_format)) == 0) {
+	if ((tmpl->base->cache_type & get_cache_type(&gc, opts_vztt->image_format, opts_vztt->vefstype)) == 0) {
 		vztt_logger(0, 0, "The template is not compatible with the " \
 			"VEFSTYPE used");
 		rc = VZT_TMPL_BROKEN;
@@ -218,7 +218,7 @@ static int create_cache(
 	}
 
 	/* Skip create just convert image if old cache exist */
-	if (get_cache_type(&gc, opts_vztt->image_format) & VZT_CACHE_TYPE_PLOOP_V2) {
+	if (get_cache_type(&gc, opts_vztt->image_format, opts_vztt->vefstype) & VZT_CACHE_TYPE_PLOOP_V2) {
 		char old[PATH_MAX+1];
 		tmpl_get_cache_tar_name(old, sizeof(old), tc.archive,
 				VZT_CACHE_TYPE_SIMFS | VZT_CACHE_TYPE_PLOOP,
@@ -722,7 +722,7 @@ int update_cache(
 
 	/* if cache file does not exist - run create_cache */
 	tmpl_get_cache_tar_name(path, sizeof(path), tc.archive,
-				get_cache_type(&gc, opts_vztt->image_format), opts_vztt->vefstype, gc.template_dir, tmpl->os->name);
+				get_cache_type(&gc, opts_vztt->image_format, opts_vztt->vefstype), opts_vztt->vefstype, gc.template_dir, tmpl->os->name);
 	if (access(path, F_OK) != 0)
 	{
 		/* Recreate cache here for the old-ploop format case */

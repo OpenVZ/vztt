@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015-2017, Parallels International GmbH
- * Copyright (c) 2017-2019 Virtuozzo International GmbH. All rights reserved.
+ * Copyright (c) 2017-2023 Virtuozzo International GmbH. All rights reserved.
  *
  * This file is part of OpenVZ. OpenVZ is free software;
  * you can redistribute it and/or modify it under the terms of the GNU
@@ -434,23 +434,43 @@ static int global_config_reader(char *var, char *val, void *data)
 	return pfcache_config_reader(var, val, data);
 }
 
-unsigned long get_cache_type(struct global_config *gc, const char* img_fmt)
+unsigned long get_cache_type(struct global_config *gc, const char* img_fmt, const char* fstype)
 {
 	unsigned long type = 0;
-	char buf[4096];
+	char bufIT[4096];
+	char bufFS[4096];
+	char *pFsType = NULL;
 	char *pImgFmt = NULL;
 
+	if (fstype && fstype[0] != '\0')
+	{
+		pFsType = (char*) fstype;
+	}
+	else
+	{
+		vzctl2_get_def_fstype(bufFS, sizeof(bufFS));
+		pFsType = bufFS;
+	}
+
+	if (!strcmp(pFsType, "simfs"))
+	{
+		return VZT_CACHE_TYPE_SIMFS;
+	}
+
 	if (img_fmt && img_fmt[0] != '\0')
+	{
 		pImgFmt = (char*) img_fmt;
-	else {
-		vzctl2_get_def_img_fmt(buf, sizeof(buf));
-		pImgFmt = buf;
+	}
+	else
+	{
+		vzctl2_get_def_img_fmt(bufIT, sizeof(bufIT));
+		pImgFmt = bufIT;
 	}
 
 	if (!strcmp(pImgFmt, QCOW2_FORMAT))
 		return VZT_CACHE_TYPE_QCOW2;
 	if (!strcmp(pImgFmt, PLOOP_FORMAT) || !strcmp(pImgFmt, PLOOP_V2_FORMAT))
-		return VZT_CACHE_TYPE_PLOOP_V2 | VZT_CACHE_TYPE_SIMFS;
+		return VZT_CACHE_TYPE_PLOOP_V2;
 	if (!strcmp(pImgFmt, SIMFS_FORMAT))
 		return VZT_CACHE_TYPE_SIMFS;
 
@@ -458,10 +478,12 @@ unsigned long get_cache_type(struct global_config *gc, const char* img_fmt)
 		type |= VZT_CACHE_TYPE_SIMFS;
 
 	if (gc->velayout == VZT_VE_LAYOUT5)
+	{
 		if (ploop_is_large_disk_supported())
 			type |= VZT_CACHE_TYPE_PLOOP_V2;
 		else
 			type |= VZT_CACHE_TYPE_PLOOP;
+	}
 	return type;
 }
 

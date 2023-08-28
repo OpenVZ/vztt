@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2015-2017, Parallels International GmbH
- * Copyright (c) 2017-2019 Virtuozzo International GmbH. All rights reserved.
+ * Copyright (c) 2017-2023 Virtuozzo International GmbH. All rights reserved.
  *
  * This file is part of OpenVZ. OpenVZ is free software;
  * you can redistribute it and/or modify it under the terms of the GNU
@@ -1772,7 +1772,6 @@ int tmpl_get_cache_tar_name(char *path, int size,
 {
 	int n;
 	char *storage_suffix = "";
-	char *simfs_preffix = "";
 	char *archive_suffix = "";
 	char *fstype_suffix;
 	char out[4096];
@@ -1784,15 +1783,14 @@ int tmpl_get_cache_tar_name(char *path, int size,
 		fstype_suffix = out;
 	}
 
-	if (cache_type & VZT_CACHE_TYPE_QCOW2)
+	if (cache_type & VZT_CACHE_TYPE_SIMFS)
+		fstype_suffix = SIMFS_FORMAT;
+	else if (cache_type & VZT_CACHE_TYPE_QCOW2)
 		storage_suffix = QCOW2_SUFFIX;
 	else if (cache_type & VZT_CACHE_TYPE_PLOOP_V2)
 		storage_suffix = PLOOP_V2_SUFFIX;
 	else if (cache_type & VZT_CACHE_TYPE_PLOOP)
 		storage_suffix = PLOOP_SUFFIX;
-
-	if (cache_type & VZT_CACHE_TYPE_SIMFS)
-		simfs_preffix = SIMFS_SUFFIX;
 
 	switch (archive) {
 	case VZT_ARCHIVE_LZ4:
@@ -1807,8 +1805,8 @@ int tmpl_get_cache_tar_name(char *path, int size,
 		break;
 	}
 
-	n = snprintf((path), (size), "%s/cache/%s%s.%s%s%s",
-		(tmpldir), (osname), simfs_preffix, fstype_suffix, storage_suffix, archive_suffix);
+	n = snprintf((path), (size), "%s/cache/%s.%s%s%s",
+		(tmpldir), (osname), fstype_suffix, storage_suffix, archive_suffix);
 
 	return (n > 0 && n < size) ? 0 : -1;
 }
@@ -1850,7 +1848,7 @@ int tmpl_get_cache_tar(
 	const char *osname)
 {
 	unsigned long cache_types[5];
-	const char* FSTYPE[] = {"ext4", "xfs", 0};
+	const char* FSTYPE[] = {"simfs", "ext4", "xfs", 0};
 	int i = 0;
 	int j = 0;
 
@@ -1866,7 +1864,7 @@ int tmpl_get_cache_tar(
 	}
 	else
 	{
-		cache_types[0] = get_cache_type(gc, "");
+		cache_types[0] = get_cache_type(gc, "", "");
 		/* Add old-format ploop here */
 		if (cache_types[0] & VZT_CACHE_TYPE_PLOOP_V2)
 		{
@@ -1929,7 +1927,7 @@ int tmpl_callback_cache_tar(
 	if (cdata && cdata->opts_vztt->image_format && cdata->opts_vztt->image_format[0] != '\0')
 	{
 		//remove only this image format
-		cache_types[0] = get_cache_type(gc, cdata->opts_vztt->image_format);
+		cache_types[0] = get_cache_type(gc, cdata->opts_vztt->image_format, cdata->opts_vztt->vefstype);
 		/* Add old-format ploop here */
 		if (cache_types[0] & VZT_CACHE_TYPE_PLOOP_V2)
 		{
