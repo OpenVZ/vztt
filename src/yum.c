@@ -647,6 +647,9 @@ static int yum_run(
 		string_list_add(&args, buf);
 	}
 
+	if (yum->allow_erasing)
+		string_list_add(&args, "--allowerasing");
+
 	if (packages) {
 		/* to add packages into arguments */
 		for (o = packages->tqh_first; o != NULL; o = o->e.tqe_next)

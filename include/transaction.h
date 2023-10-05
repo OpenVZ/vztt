@@ -247,6 +247,7 @@ typedef enum {
 	int (*pm_get_group_info)(struct Transaction *pm, const char *group, struct group_info *group_info);\
 	int progress_fd;\
 	char *release_version;\
+	int allow_erasing;
 
 struct Transaction
 {
