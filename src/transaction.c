@@ -239,6 +239,7 @@ int pm_init_wo_vzup2date(
 	pm->metadata_expire = tc->metadata_expire;
 	pm->force_openat = (opts_vztt->flags & OPT_VZTT_FORCE_OPENAT);
 	pm->interactive = (opts_vztt->flags & OPT_VZTT_INTERACTIVE);
+	pm->allow_erasing = (opts_vztt->flags & OPT_VZTT_ALLOW_ERASING);
 	if (opts_vztt->logfile) {
 		if ((pm->logfile = strdup(opts_vztt->logfile)) == NULL) {
 			vztt_logger(0, errno, "Cannot alloc memory");

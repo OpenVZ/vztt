@@ -63,6 +63,7 @@ struct options_vztt *options_convert(struct options *opts);
 #define	OPT_VZTT_USE_VZUP2DATE (1U << 22)
 #define	OPT_VZTT_FORCE_VZCTL (1U << 23)
 #define	OPT_VZTT_AVAILABLE (1U << 24)
+#define	OPT_VZTT_ALLOW_ERASING (1U << 25)
 
 #ifdef __cplusplus
 }
