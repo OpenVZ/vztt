@@ -259,6 +259,9 @@ int pm_init_wo_vzup2date(
 	/* pass progress fd to pm */
 	pm->progress_fd = opts_vztt->progress_fd;
 
+	// pass release version in yum cmd
+	pm->release_version = opts_vztt->release_version;
+
 	string_list_init(&pm->options);
 	string_list_init(&pm->exclude);
 
