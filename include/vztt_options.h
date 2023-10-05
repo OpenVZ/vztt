@@ -46,6 +46,7 @@ struct options_vztt {
 	char *app_apptemplate;
 	char *vefstype;
 	int progress_fd;
+	char *release_version;
 };
 
 #ifndef _USE_DLOPEN_

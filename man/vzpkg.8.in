@@ -269,6 +269,9 @@ Update packages in the existing OS template cache instead of recreating the cach
 .TP
 \fB\-\-vefstype <VEFSTYPE>\fR
 Redefine the VEFSTYPE parameter in the vz global configuration file.
+.TP
+\fB\-\-releasever=<release_version>\fR
+Add release version into yum cmd
 .SH DIAGNOSTICS
 \fBvzpkg\fR returns 0 upon successful execution. If something goes wrong, it
 returns an appropriate error code.

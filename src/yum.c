@@ -642,6 +642,12 @@ static int yum_run(
 			break;
 	}
 
+	// add --releasever=version in yum cmd
+	if (yum->release_version) {
+		snprintf(buf, sizeof(buf), "--releasever=%s", yum->release_version);
+		string_list_add(&args, buf);
+	}
+
 	if (packages) {
 		/* to add packages into arguments */
 		for (o = packages->tqh_first; o != NULL; o = o->e.tqe_next)
