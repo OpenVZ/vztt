@@ -123,6 +123,7 @@ enum {
 	PARAM_GROUPS        = 'g',
 	PARAM_NO_VZUP2DATE  = 'v',
 	PARAM_RELEASE_VERSION = 'Q',
+	PARAM_ALLOW_ERASING = 'D',
 	PARAM_CONFIG        = 0,
 	PARAM_APP_OSTEMPLATE = 1,
 	PARAM_APP_APPTEMPLATE = 2,
@@ -244,6 +245,7 @@ void usage(const char * progname, int rc)
 	fprintf(stderr,"    --vefstype <VEFSTYPE> Redefine the VEFSTYPE parameter in the vz global\n" \
 		"configuration file\n");
 	fprintf(stderr,"    --releasever=<release_version> Add release version into yum cmd\n");
+	fprintf(stderr,"    --allowerasing Add allowerasing argument into yum cmd\n");
 /*	fprintf(stderr,"       --skip-db         do not check vzpackages in "\
 		"internal packages database in repair mode\n");*/
 /*	fprintf(stderr,"       --vzdir           report list of use by CT directories at template area\n");*/
@@ -306,6 +308,7 @@ static int parse_cmd_line(
 		{"vefstype", required_argument, NULL, PARAM_VEFSTYPE},
 		{"progress", required_argument, NULL, PARAM_PROGRESS_FD},
 		{"releasever", required_argument, NULL, PARAM_RELEASE_VERSION},
+		{"allowerasing", no_argument, NULL, PARAM_ALLOW_ERASING},
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -316,7 +319,7 @@ static int parse_cmd_line(
 
 	while (1)
 	{
-		c = getopt_long(argc, argv, "fd:nqCrSu12pFQ:ciwAOTWoektaIsPvg0yYLZ", options, NULL);
+		c = getopt_long(argc, argv, "fd:nqCrSu12pFQ:ciwAODTWoektaIsPvg0yYLZ", options, NULL);
 		if (c == -1)
 			break;
 		switch (c)
@@ -499,6 +502,9 @@ static int parse_cmd_line(
 			}
 			opts_vztt->release_version = strdup(optarg);
 
+			break;
+		case PARAM_ALLOW_ERASING:
+			opts_vztt->flags |= OPT_VZTT_ALLOW_ERASING;
 			break;
 		default :
 			return VZT_BAD_PARAM;
