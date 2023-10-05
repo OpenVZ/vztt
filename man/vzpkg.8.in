@@ -277,6 +277,8 @@ Redefine the VEFSTYPE parameter in the vz global configuration file.
 .TP
 \fB\-\-veimgfmt <VEIMAGEFORMAT>\fR
 Redefine the VEIMAGEFORMAT parameter in the vz global configuration file.
+\fB\-\-releasever=<release_version>\fR
+Add release version into yum cmd
 .SH DIAGNOSTICS
 \fBvzpkg\fR returns 0 upon successful execution. If something goes wrong, it
 returns an appropriate error code.

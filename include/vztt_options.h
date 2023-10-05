@@ -48,6 +48,7 @@ struct options_vztt {
 	char *image_format;
 	int progress_fd;
 	unsigned int timeout;
+	char *release_version;
 };
 
 #ifndef _USE_DLOPEN_

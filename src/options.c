@@ -453,6 +453,9 @@ void vztt_options_free(struct options_vztt *opts_vztt)
 	if (opts_vztt->vefstype)
 		free(opts_vztt->vefstype);
 
+	if (opts_vztt->release_version)
+		free(opts_vztt->release_version);
+
 	if (opts_vztt)
 		free(opts_vztt);
 }

@@ -122,6 +122,7 @@ enum {
 	PARAM_FORCE_VZCTL   = '9',
 	PARAM_GROUPS        = 'g',
 	PARAM_NO_VZUP2DATE  = 'v',
+	PARAM_RELEASE_VERSION = 'Q',
 	PARAM_CONFIG        = 0,
 	PARAM_APP_OSTEMPLATE = 1,
 	PARAM_APP_APPTEMPLATE = 2,
@@ -252,7 +253,7 @@ void usage(const char * progname, int rc)
 	fprintf(stderr,	"    --timeout <seconds>\n"
 					"                         Define the timeout interval for locked cache until it will be unlocked\n" \
 					"                         Absent or zero value mean infinite period\n");
-
+	fprintf(stderr,"    --releasever=<release_version> Add release version into yum cmd\n");
 /*	fprintf(stderr,"       --skip-db         do not check vzpackages in "\
 		"internal packages database in repair mode\n");*/
 /*	fprintf(stderr,"       --vzdir           report list of use by CT directories at template area\n");*/
@@ -316,6 +317,7 @@ static int parse_cmd_line(
 		{"progress", required_argument, NULL, PARAM_PROGRESS_FD},
 		{"veimgfmt", required_argument, NULL, PARAM_VEIMGFMT},
 		{"timeout", required_argument, NULL, PARAM_TIMEOUT},
+		{"releasever", required_argument, NULL, PARAM_RELEASE_VERSION},
 		{ NULL, 0, NULL, 0 }
 	};
 
@@ -326,7 +328,7 @@ static int parse_cmd_line(
 
 	while (1)
 	{
-		c = getopt_long(argc, argv, "fd:nqCrSu12pF:ciwAOTWoektaIsPvg0yYLZ", options, NULL);
+		c = getopt_long(argc, argv, "fd:nqCrSu12pFQ:ciwAOTWoektaIsPvg0yYLZ", options, NULL);
 		if (c == -1)
 			break;
 		switch (c)
@@ -515,6 +517,12 @@ static int parse_cmd_line(
 				return VZT_BAD_PARAM;
 			}
 			opts_vztt->timeout = strtol(optarg, NULL, 10);
+		case PARAM_RELEASE_VERSION :
+			if (optarg == NULL) {
+				vztt_logger(0, 0, "Bad release version value");
+				return VZT_BAD_PARAM;
+			}
+			opts_vztt->release_version = strdup(optarg);
 			break;
 		default :
 			return VZT_BAD_PARAM;

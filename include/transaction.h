@@ -246,6 +246,7 @@ typedef enum {
 	/* To get group info from yum, parse and place in structures */\
 	int (*pm_get_group_info)(struct Transaction *pm, const char *group, struct group_info *group_info);\
 	int progress_fd;\
+	char *release_version;\
 
 struct Transaction
 {
