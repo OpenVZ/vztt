@@ -277,6 +277,7 @@ Redefine the VEFSTYPE parameter in the vz global configuration file.
 .TP
 \fB\-\-veimgfmt <VEIMAGEFORMAT>\fR
 Redefine the VEIMAGEFORMAT parameter in the vz global configuration file.
+.TP
 \fB\-\-releasever=<release_version>\fR
 Add release version into yum cmd
 .TP

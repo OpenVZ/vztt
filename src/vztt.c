@@ -520,6 +520,7 @@ static int parse_cmd_line(
 				return VZT_BAD_PARAM;
 			}
 			opts_vztt->timeout = strtol(optarg, NULL, 10);
+			break;
 		case PARAM_RELEASE_VERSION :
 			if (optarg == NULL) {
 				vztt_logger(0, 0, "Bad release version value");
