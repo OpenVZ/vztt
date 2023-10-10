@@ -319,7 +319,7 @@ static int parse_cmd_line(
 
 	while (1)
 	{
-		c = getopt_long(argc, argv, "fd:nqCrSu12pFQ:ciwAODTWoektaIsPvg0yYLZ", options, NULL);
+		c = getopt_long(argc, argv, "fd:nqCrSu12pF:Q:ciwAODTWoektaIsPvg0yYLZ", options, NULL);
 		if (c == -1)
 			break;
 		switch (c)
@@ -496,7 +496,7 @@ static int parse_cmd_line(
 			opts_vztt->progress_fd = atoi(optarg);
 			break;
 		case PARAM_RELEASE_VERSION :
-			if (optarg == NULL) {
+			if (optarg == NULL || strlen(optarg) == 0) {
 				vztt_logger(0, 0, "Bad release version value");
 				return VZT_BAD_PARAM;
 			}
