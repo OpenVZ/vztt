@@ -64,6 +64,7 @@ struct options_vztt *options_convert(struct options *opts);
 #define	OPT_VZTT_FORCE_VZCTL (1U << 23)
 #define	OPT_VZTT_AVAILABLE (1U << 24)
 #define	OPT_VZTT_ALLOW_ERASING (1U << 25)
+#define	OPT_VZTT_NO_REPAIR (1U << 26)
 
 #ifdef __cplusplus
 }
