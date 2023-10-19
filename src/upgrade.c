@@ -127,26 +127,29 @@ int ve_packages_upgrade(
 
 	/* Step 5: Repair EZ template area */
 	/* find unupdated packages (points to old template area) */
-	for (pkg = existed.tqh_first; pkg != NULL; \
-			pkg = pkg->e.tqe_next) {
-		/* find this package in updated */
-		if (package_list_find(updated, pkg->p))
-			continue;
 
-		/* find this package in added */
-		if (package_list_find(added, pkg->p))
-			continue;
+	if (!(opts_vztt->flags & OPT_VZTT_NO_REPAIR)) {
+		for (pkg = existed.tqh_first; pkg != NULL; pkg = pkg->e.tqe_next)
+		{
+			/* find this package in updated */
+			if (package_list_find(updated, pkg->p))
+				continue;
 
-		/* find this package in removed */
-		if (package_list_find(removed, pkg->p))
-			continue;
+			/* find this package in added */
+			if (package_list_find(added, pkg->p))
+				continue;
 
-		/* this package was not updated and was not removed */
-		/* find suitable package directory in target template area
-		 or try to download it if not found */
-		if (pm_prepare_pkg_area(t, pkg->p) == 0)
-			if ((rc = package_list_add(toconvert, pkg->p)))
-				return rc;
+			/* find this package in removed */
+			if (package_list_find(removed, pkg->p))
+				continue;
+
+			/* this package was not updated and was not removed */
+			/* find suitable package directory in target template area
+			 or try to download it if not found */
+			if (pm_prepare_pkg_area(t, pkg->p) == 0)
+				if ((rc = package_list_add(toconvert, pkg->p)))
+					return rc;
+		}
 	}
 
 	/* ok - upgrade completed. create new full vz packages list */

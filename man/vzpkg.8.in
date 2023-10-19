@@ -275,6 +275,9 @@ Add release version into yum cmd
 .TP
 \fB\-\-allowerasing\fR
 Add allowerasing option for yum cmd.
+.TP
+\fB\-\-norepair\fR
+vzpkg upgrade cmd option which excludes template repair after upgrade
 .SH DIAGNOSTICS
 \fBvzpkg\fR returns 0 upon successful execution. If something goes wrong, it
 returns an appropriate error code.
