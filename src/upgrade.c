@@ -94,8 +94,7 @@ int ve_packages_upgrade(
 	}
 
 	if (opts_vztt->flags & OPT_VZTT_TEST) {
-		vztt_logger(0, 0, "Upgrade CT %s to %s is possible.", \
-			ctid, tmpl->os->name);
+		vztt_logger(VZTL_INFO, 0, "Upgrade CT %s is possible.", ctid);
 		return 0;
 	}
 
